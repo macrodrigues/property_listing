@@ -387,7 +387,7 @@ if __name__ == '__main__':
         finally:
             page.close()
 
-    upload merged dataframe to a google sheet
+    # upload merged dataframe to a google sheet
     upload_to_google(
         f"{PATH}/credentials.json",
         os.getenv('SHEET_ID'),
