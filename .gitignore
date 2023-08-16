@@ -2,3 +2,5 @@ villas.csv
 lands.csv
 test.ipynb
 kibarer_data.csv
+keys.env
+credentials.json

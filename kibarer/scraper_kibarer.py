@@ -1,9 +1,47 @@
 """ this script scrapes villas and lands from Kibarer property website."""
 
+import os
 import time
+from dotenv import load_dotenv
 import pandas as pd
+import gspread
+from google.oauth2.service_account import Credentials
 from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
+
+
+def upload_to_google(json_path, sheet_id, df):
+    """ this function uploads data to a google sheet.
+
+    It takes the service account credentials.json to make an object that
+    connects with gspread to make a client.
+
+    Then it saves the dataframe into the google sheet.
+
+    """
+    # Authenticate with Google Sheets using the JSON key file
+    scope = ['https://www.googleapis.com/auth/spreadsheets',
+             'https://www.googleapis.com/auth/drive']
+
+    creds = Credentials.from_service_account_file(
+        json_path, scopes=scope)
+
+    client = gspread.authorize(creds)
+
+    # Open the Google Sheet by id
+    sheet = client.open_by_key(sheet_id)
+    sheet1 = sheet.get_worksheet(0)
+
+    # Convert the DataFrame to a list of lists
+    data = df.values.tolist()
+
+    # Clear existing data and update the Google Sheet with new data
+    sheet1.clear()
+    # Convert the DataFrame headers to a list and insert as the first row
+    header_row = df.columns.tolist()
+    sheet1.insert_rows([header_row], row=1)
+    # insert the full data
+    sheet1.insert_rows(data, row=2)
 
 
 def obtain_links(base_url, website_page) -> list:
@@ -171,7 +209,7 @@ def get_only_villas_features(soup, description_items, prices):
         price = float(
             [price.text.strip().split(' ')[1]
                 .replace(',', '') for price in prices][0])
-    except Exception.with_traceback() as error:
+    except Exception as error:
         print(error)
         price = [price.text.strip() for price in prices][0]
 
@@ -196,7 +234,7 @@ def get_only_lands_features(prices) -> str:
                  .strip()
                  .replace(',', '') for price in prices][0]
 
-    except Exception.with_traceback() as error:
+    except Exception as error:
         print(error)
         price = [price.text.strip() for price in prices][0]
 
@@ -232,7 +270,7 @@ def scrape_kibarer(url, n_pages=90):
                 # get codes of each property
                 codes = soup.select('.code')
 
-            except Exception.with_traceback() as error:
+            except Exception as error:
                 print(error)
                 time.sleep(60)
                 continue
@@ -296,7 +334,7 @@ def scrape_kibarer(url, n_pages=90):
 
                     details.append(detail)
 
-            except Exception.with_traceback() as error:
+            except Exception as error:
                 print(error)
             continue
 
@@ -306,16 +344,24 @@ def scrape_kibarer(url, n_pages=90):
     else:
         df_res.to_csv('lands.csv')
 
+    return df_res
+
 
 if __name__ == '__main__':
-    URL_LANDS = 'https://www.villabalisale.com/search/land'
-    URL_VILLAS = 'https://www.villabalisale.com/search/villas-for-sale'
+    load_dotenv('kibarer/keys.env')
+    URL_LANDS = os.getenv('URL_LANDS')
+    URL_VILLAS = os.getenv('URL_VILLAS')
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
         try:
-            scrape_kibarer(url=URL_VILLAS, n_pages=4)
+            df_data = scrape_kibarer(url=URL_VILLAS, n_pages=5)
         finally:
             page.close()
+
+    upload_to_google(
+        'kibarer/credentials.json',
+        os.getenv('SHEET_ID'),
+        df_data)
