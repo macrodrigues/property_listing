@@ -2,6 +2,7 @@
 
 import os
 import time
+import re
 from dotenv import load_dotenv
 import pandas as pd
 import gspread
@@ -75,7 +76,7 @@ def obtain_links(base_url, website_page) -> list:
     return property_links
 
 
-def change_currency_n_get_soup(property_link, currency_flag) -> object:
+def change_currency_n_get_soup(property_link) -> object:
     """ This function takes the property link and returns a beautiful soup
     element.
 
@@ -87,18 +88,14 @@ def change_currency_n_get_soup(property_link, currency_flag) -> object:
     # go to new url provided by the link
     page.goto(property_link)
 
-    if currency_flag == 0:
-        # Click on the currency dropdown
-        page.click('.header-cur')
+    # Click on the currency dropdown
+    page.click('.header-cur')
 
-        # then locate the currency IDR and click
-        page.locator('text=IDR').first.click()
+    # then locate the currency IDR and click
+    page.locator('text=IDR').first.click()
 
-        # print to know that the currency was changed
-        print('Currency changed!')
-
-    else:
-        print('Currency already changed!')
+    # print to know that the currency was changed
+    print('Currency changed!')
 
     html = page.inner_html('body')
 
@@ -125,6 +122,10 @@ def get_shared_features(soup):
     img_tags = images[0].find_all('img')
     img_src = img_tags[0].get('src')
     date = img_src.split('/')[-1].split('-property')[0]
+    pattern = r"^\d{4}-\d{2}-\d{2}$"
+
+    if not re.match(pattern, date):
+        date = None
 
     # get elements inside colswidth20
     colswidth20_items = soup.select('.colswidth20')
@@ -219,7 +220,7 @@ def get_only_villas_features(soup, description_items, prices):
     try:
         price = [price.text.strip().split(' ')[1]
                  .replace(',', '') for price in prices][0]
-    except RuntimeError as error:
+    except Exception as error:
         print(error)
         price = [price.text.strip() for price in prices][0]
 
@@ -244,14 +245,14 @@ def get_only_lands_features(prices) -> str:
                  .strip()
                  .replace(',', '') for price in prices][0]
 
-    except RuntimeError as error:
+    except Exception as error:
         print(error)
         price = [price.text.strip() for price in prices][0]
 
     return price
 
 
-def scraper(url, n_pages=90):
+def scraper(url, n_pages=90) -> pd.DataFrame:
     """ This function takes all the other functions to build the scraping
     process.
 
@@ -266,15 +267,10 @@ def scraper(url, n_pages=90):
     for website_page in range(n_pages):
         print('page: ', website_page)
         property_links = obtain_links(url, website_page)
-        # this will click once to change currency
-        currency_flag = 0
         for link in property_links:
             try:
                 # make a beautiful soup object
-                soup = change_currency_n_get_soup(link, currency_flag)
-
-                # no more clicks to change currency, inside this list
-                currency_flag = 1
+                soup = change_currency_n_get_soup(link)
 
                 # get the price of each property
                 prices = soup.select('.regular-price')
@@ -285,7 +281,7 @@ def scraper(url, n_pages=90):
                 # get codes of each property
                 codes = soup.select('.code')
 
-            except RuntimeError as error:
+            except Exception as error:
                 print(error)
                 time.sleep(60)
                 continue
@@ -351,7 +347,7 @@ def scraper(url, n_pages=90):
 
                     details.append(detail)
 
-            except RuntimeError as error:
+            except Exception as error:
                 print(error)
             continue
 
@@ -378,20 +374,20 @@ if __name__ == '__main__':
 
         try:
             # create lands dataframe
-            df_lands = scraper(url=URL_LANDS, n_pages=2)
+            df_lands = scraper(url=URL_LANDS, n_pages=4)
             # create villas dataframe
-            df_villas = scraper(url=URL_VILLAS, n_pages=2)
+            df_villas = scraper(url=URL_VILLAS, n_pages=95)
             # merge both
             df_data = pd.concat([df_villas, df_lands])
             # save all datasets as .csv files
             df_lands.to_csv(f"{PATH}/data/lands.csv")
-            df_villas.to_csv(f"{PATH}/data/villas.csv")
+            df_villas.to_csv(f"{PATH}/data/villas_test.csv")
             df_data.to_csv(f"{PATH}/data/kib_data.csv")
 
         finally:
             page.close()
 
-    # upload merged dataframe to a google sheet
+    upload merged dataframe to a google sheet
     upload_to_google(
         f"{PATH}/credentials.json",
         os.getenv('SHEET_ID'),
