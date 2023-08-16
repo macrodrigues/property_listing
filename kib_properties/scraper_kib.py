@@ -1,4 +1,4 @@
-""" this script scrapes villas and lands from Kibarer property website."""
+""" this script scrapes villas and lands from a property website."""
 
 import os
 import time
@@ -75,7 +75,7 @@ def obtain_links(base_url, website_page) -> list:
     return property_links
 
 
-def change_currency_n_get_soup(property_link) -> object:
+def change_currency_n_get_soup(property_link, currency_flag) -> object:
     """ This function takes the property link and returns a beautiful soup
     element.
 
@@ -87,14 +87,18 @@ def change_currency_n_get_soup(property_link) -> object:
     # go to new url provided by the link
     page.goto(property_link)
 
-    # Click on the currency dropdown
-    page.click('.header-cur')
+    if currency_flag == 0:
+        # Click on the currency dropdown
+        page.click('.header-cur')
 
-    # then locate the currency IDR and click
-    page.locator('text=IDR').first.click()
+        # then locate the currency IDR and click
+        page.locator('text=IDR').first.click()
 
-    # print to know that the currency was changed
-    print('Currency changed!')
+        # print to know that the currency was changed
+        print('Currency changed!')
+
+    else:
+        print('Currency already changed!')
 
     html = page.inner_html('body')
 
@@ -113,8 +117,15 @@ def get_shared_features(soup):
     - type_sale: the type of sale, lease or free
     - hold_years: the number of lease years
     - description_items: a list that is used later on to get more features.
+    - date: the date of the upload, by using the image src
 
     """
+    # get date using the image
+    images = soup.select('figure')
+    img_tags = images[0].find_all('img')
+    img_src = img_tags[0].get('src')
+    date = img_src.split('/')[-1].split('-property')[0]
+
     # get elements inside colswidth20
     colswidth20_items = soup.select('.colswidth20')
     colswidth20_item = [
@@ -145,7 +156,7 @@ def get_shared_features(soup):
             description_items.append(
                 paragraph.text.strip())
 
-    return type_sale, hold_years, description_items, colswidth20_item
+    return type_sale, hold_years, description_items, colswidth20_item, date
 
 
 def get_only_villas_features(soup, description_items, prices):
@@ -206,10 +217,9 @@ def get_only_villas_features(soup, description_items, prices):
 
     # clean price variable
     try:
-        price = float(
-            [price.text.strip().split(' ')[1]
-                .replace(',', '') for price in prices][0])
-    except Exception as error:
+        price = [price.text.strip().split(' ')[1]
+                 .replace(',', '') for price in prices][0]
+    except RuntimeError as error:
         print(error)
         price = [price.text.strip() for price in prices][0]
 
@@ -234,14 +244,14 @@ def get_only_lands_features(prices) -> str:
                  .strip()
                  .replace(',', '') for price in prices][0]
 
-    except Exception as error:
+    except RuntimeError as error:
         print(error)
         price = [price.text.strip() for price in prices][0]
 
     return price
 
 
-def scrape_kibarer(url, n_pages=90):
+def scraper(url, n_pages=90):
     """ This function takes all the other functions to build the scraping
     process.
 
@@ -256,10 +266,15 @@ def scrape_kibarer(url, n_pages=90):
     for website_page in range(n_pages):
         print('page: ', website_page)
         property_links = obtain_links(url, website_page)
+        # this will click once to change currency
+        currency_flag = 0
         for link in property_links:
             try:
                 # make a beautiful soup object
-                soup = change_currency_n_get_soup(link)
+                soup = change_currency_n_get_soup(link, currency_flag)
+
+                # no more clicks to change currency, inside this list
+                currency_flag = 1
 
                 # get the price of each property
                 prices = soup.select('.regular-price')
@@ -270,14 +285,14 @@ def scrape_kibarer(url, n_pages=90):
                 # get codes of each property
                 codes = soup.select('.code')
 
-            except Exception as error:
+            except RuntimeError as error:
                 print(error)
                 time.sleep(60)
                 continue
 
             try:
-                type_sale, hold_years, description_items, colswidth20_item\
-                    = get_shared_features(soup)
+                type_sale, hold_years, description_items, colswidth20_item,\
+                    date = get_shared_features(soup)
 
                 if 'villas' in url:
                     price, year_built, land_size, building_size,\
@@ -287,6 +302,7 @@ def scrape_kibarer(url, n_pages=90):
                     detail = {
                         'Title': [
                             title.text.strip() for title in titles][0],
+                        'Upload Date': date,
                         'Price (IDR)': price,
                         'Code': [
                             code.text.strip() for code in codes][0],
@@ -313,6 +329,7 @@ def scrape_kibarer(url, n_pages=90):
                     detail = {
                         'Title': [
                             title.text.strip() for title in titles][0],
+                        'Upload Date': date,
                         'Price (IDR)': price,
                         'Code': [
                             code.text.strip() for code in codes][0],
@@ -334,34 +351,48 @@ def scrape_kibarer(url, n_pages=90):
 
                     details.append(detail)
 
-            except Exception as error:
+            except RuntimeError as error:
                 print(error)
             continue
 
-    df_res = pd.DataFrame(details)
-    if 'villas' in url:
-        df_res.to_csv('villas.csv')
-    else:
-        df_res.to_csv('lands.csv')
-
-    return df_res
+    return pd.DataFrame(details)
 
 
 if __name__ == '__main__':
-    load_dotenv('kibarer/keys.env')
+    # path of the scraper
+    PATH = os.path.dirname(__file__)
+
+    # load environment keys
+    load_dotenv(f"{PATH}/keys.env")
+
+    # main URLs to be scraped
     URL_LANDS = os.getenv('URL_LANDS')
     URL_VILLAS = os.getenv('URL_VILLAS')
 
+    # "with" statement for exception handling
     with sync_playwright() as p:
+        # creates an instance of the Chromium browser and launches it
         browser = p.chromium.launch(headless=True)
+        # creates a new browser page (tab) within the browser instance
         page = browser.new_page()
 
         try:
-            df_data = scrape_kibarer(url=URL_VILLAS, n_pages=5)
+            # create lands dataframe
+            df_lands = scraper(url=URL_LANDS, n_pages=2)
+            # create villas dataframe
+            df_villas = scraper(url=URL_VILLAS, n_pages=2)
+            # merge both
+            df_data = pd.concat([df_villas, df_lands])
+            # save all datasets as .csv files
+            df_lands.to_csv(f"{PATH}/data/lands.csv")
+            df_villas.to_csv(f"{PATH}/data/villas.csv")
+            df_data.to_csv(f"{PATH}/data/kib_data.csv")
+
         finally:
             page.close()
 
+    # upload merged dataframe to a google sheet
     upload_to_google(
-        'kibarer/credentials.json',
+        f"{PATH}/credentials.json",
         os.getenv('SHEET_ID'),
         df_data)
