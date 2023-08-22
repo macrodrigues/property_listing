@@ -3,6 +3,7 @@
 import os
 import time
 import re
+import datetime as dt
 from dotenv import load_dotenv
 import pandas as pd
 import gspread
@@ -43,6 +44,37 @@ def upload_to_google(json_path, sheet_id, df):
     sheet1.insert_rows([header_row], row=1)
     # insert the full data
     sheet1.insert_rows(data, row=2)
+
+
+def update_dataframe(df_new, df_old=None):
+    """ This function it takes a new and a old dataset.
+
+    It serves to trace the price changes on the platform.
+
+    """
+    if df_old is None:  # First-time scrape
+        df_new['First Scrape Date'] = dt.datetime.now()\
+            .strftime('%Y-%m-%d %H:%M:%S')
+        df_new['Current Scrape Date'] = df_new['First Scrape Date']
+        df_new['Original Price (IDR)'] = df_new['Price (IDR)']
+    else:  # Subsequent scrapes
+        df_new['Current Scrape Date'] = dt.datetime.now()\
+            .strftime('%Y-%m-%d %H:%M:%S')
+        # Merge old and new data
+        df_merged = pd.merge(
+            df_new,
+            df_old[[
+                'Code',
+                'First Scrape Date',
+                'Original Price (IDR)']], on='Code', how='left')
+        # Update 'First Scrape Date' and 'Original Price (IDR)' for new entries
+        df_merged['First Scrape Date'].fillna(
+            df_new['Current Scrape Date'], inplace=True)
+        df_merged['Original Price (IDR)'].fillna(
+            df_new['Price (IDR)'], inplace=True)
+        df_new = df_merged
+
+    return df_new
 
 
 def obtain_links(base_url, website_page) -> list:
@@ -365,6 +397,28 @@ if __name__ == '__main__':
     URL_LANDS = os.getenv('URL_LANDS')
     URL_VILLAS = os.getenv('URL_VILLAS')
 
+    # reorder columns
+    column_order = [
+        'Title',
+        'Code',
+        'Upload Date',
+        'First Scrape Date',
+        'Current Scrape Date',
+        'Original Price (IDR)',
+        'Price (IDR)',
+        'Location',
+        'Type of Sale',
+        'Lease Years',
+        'URL',
+        'Property Type',
+        'Year Built',
+        'Bedrooms',
+        'Bathrooms',
+        'Land Size (are)',
+        'Building Size (sqm)',
+        'Pool',
+        'Furnished']
+
     # "with" statement for exception handling
     with sync_playwright() as p:
         # creates an instance of the Chromium browser and launches it
@@ -373,16 +427,33 @@ if __name__ == '__main__':
         page = browser.new_page()
 
         try:
-            # create lands dataframe
-            df_lands = scraper(url=URL_LANDS, n_pages=4)
-            # create villas dataframe
-            df_villas = scraper(url=URL_VILLAS, n_pages=95)
-            # merge both
+            # Load existing data if available
+            try:
+                df_lands_old = pd.read_csv(f"{PATH}/data/lands.csv")
+                df_villas_old = pd.read_csv(f"{PATH}/data/villas.csv")
+            except FileNotFoundError:
+                df_lands_old = None
+                df_villas_old = None
+
+            # Scrape new data
+            df_lands_new = scraper(url=URL_LANDS, n_pages=34)
+            df_villas_new = scraper(url=URL_VILLAS, n_pages=94)
+
+            # Update dataframes
+            df_lands = update_dataframe(df_lands_new, df_lands_old)
+            df_villas = update_dataframe(df_villas_new, df_villas_old)
+
+            # apply reorder
+            df_lands = df_lands[column_order]
+            df_villas = df_villas[column_order]
+
+            # Merge both
             df_data = pd.concat([df_villas, df_lands])
-            # save all datasets as .csv files
-            df_lands.to_csv(f"{PATH}/data/lands.csv")
-            df_villas.to_csv(f"{PATH}/data/villas_test.csv")
-            df_data.to_csv(f"{PATH}/data/kib_data.csv")
+
+            # Save all datasets as .csv files
+            df_lands.to_csv(f"{PATH}/data/lands.csv", index=False)
+            df_villas.to_csv(f"{PATH}/data/villas.csv", index=False)
+            df_data.to_csv(f"{PATH}/data/kib_data.csv", index=False)
 
         finally:
             page.close()
