@@ -301,7 +301,7 @@ def scraper(page, url, n_pages=90) -> pd.DataFrame:
     """
     details = []
 
-    for website_page in range(92, n_pages):
+    for website_page in range(n_pages):
         print('page: ', website_page)
         property_links = obtain_links(page, url, website_page)
         for link in property_links:
@@ -432,11 +432,11 @@ def main(url_lands, url_villas):
             df_lands = scraper(
                 page,
                 url=URL_LANDS,
-                n_pages=num_lands - num_lands)
+                n_pages=num_lands-1)
             df_villas = scraper(
                 page,
                 url=URL_VILLAS,
-                n_pages=num_villas-1)
+                n_pages=num_villas-num_villas)
 
             # Merge both
             df_new = pd.concat([df_villas, df_lands])
