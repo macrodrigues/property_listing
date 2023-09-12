@@ -96,12 +96,12 @@ def obtain_links(page, base_url, website_page) -> list:
     return property_links
 
 
-def change_currency_n_get_soup(page, property_link) -> object:
+def change_currency_n_get_soup(page, property_link, currency='USD') -> object:
     """ This function takes the property link and returns a beautiful soup
     element.
 
     At first it goes to link, then it clicks on the '.header-cur' class
-    with the Playwright page method, it locates the text IDR  and clicks
+    with the Playwright page method, it locates the text IDR or USD and clicks
     to change the currency. Finally it creates the soup element.
 
     """
@@ -112,10 +112,10 @@ def change_currency_n_get_soup(page, property_link) -> object:
     page.click('.header-cur')
 
     # then locate the currency IDR and click
-    page.locator('text=IDR').first.click()
+    page.locator(f"text={currency}").first.click()
 
     # print to know that the currency was changed
-    print('Currency changed!')
+    print(f"Currency changed to {currency}!")
 
     html = page.inner_html('body')
 
@@ -245,18 +245,32 @@ def get_only_villas_features(soup, description_items, prices, prices_usd):
     else:
         pool = 'no'
 
-    # clean price variable
+    def get_price_parameters(prices):
+        try:
+            price = [price.text.strip().split(' ')[1]
+                     .replace(',', '') for price in prices][0]
+            price = float(price.replace(',', ''))
+            payment_period = 'one time'
+        except Exception as error:
+            if 'Request' in str(error):
+                price = 0
+                payment_period = 'on request'
+                print(error, ': FIXED!')
+            if 'price' in str(error):
+                price = 0
+                payment_period = 'on request'
+                print(error, ': FIXED!')
+
+        return price, payment_period
+
     try:
-        price_usd = [price_usd.text.strip().split(' ')[1]
-                     .replace(',', '') for price_usd in prices_usd][0]
-        price = [price.text.strip().split(' ')[1]
-                 .replace(',', '') for price in prices][0]
+        price_usd, payment_period_usd = get_price_parameters(prices_usd)
+        price, payment_period = get_price_parameters(prices)
     except Exception as error:
         print(error)
-        price = [price.text.strip() for price in prices][0]
-        price_usd = [price_usd.text.strip() for price_usd in prices_usd][0]
 
     return price, price_usd,\
+        payment_period, payment_period_usd,\
         year_built, land_size, building_size, \
         pool, furnished, rooms
 
@@ -271,22 +285,37 @@ def get_only_lands_features(prices, prices_usd) -> str:
 
     """
 
+    def get_price_parameters(prices):
+        price_string = [price.text.strip() for price in prices][0]
+        price = price_string.split(' ')[1]
+        if '/' in price_string:
+            payment_period = price_string.split(' / ')[1]
+            if '\n' in payment_period:
+                payment_period = payment_period.split('\n')[0]
+        else:
+            payment_period = None
+
+        try:
+            price = float(price.replace(',', ''))
+        except Exception as error:
+            print(error)
+            price = 0
+            payment_period = 'on request'
+
+        return price, payment_period
+
     try:
-        price = [price.text.strip().split(' ')[1]
-                 .split('\n')[0]
-                 .strip()
-                 .replace(',', '') for price in prices][0]
-        price_usd = [price_usd.text.strip().split(' ')[1]
-                     .split('\n')[0]
-                     .strip()
-                     .replace(',', '') for price_usd in prices_usd][0]
+        price_usd, payment_period_usd = get_price_parameters(prices_usd)
+        price, payment_period = get_price_parameters(prices)
+        print("Price USD: ", price_usd)
+        print("Payment Period (USD): ", payment_period_usd)
+        print("Price IDR: ", price)
+        print("Payment Period (IDR): ", payment_period)
 
     except Exception as error:
         print(error)
-        price = [price.text.strip() for price in prices][0]
-        price_usd = [price_usd.text.strip() for price_usd in prices_usd][0]
 
-    return price, price_usd
+    return price, price_usd, payment_period, payment_period_usd
 
 
 def scraper(page, url, n_pages=90) -> pd.DataFrame:
@@ -306,20 +335,16 @@ def scraper(page, url, n_pages=90) -> pd.DataFrame:
         property_links = obtain_links(page, url, website_page)
         for link in property_links:
             try:
-                # go to new url provided by the link
-                page.goto(link)
+                # make a beautiful soup object and convert to USD
+                soup_usd = change_currency_n_get_soup(page, link, 'USD')
 
-                html = page.inner_html('body')
+                # make a beautiful soup object and convert to IDR
+                soup = change_currency_n_get_soup(page, link, 'IDR')
 
-                soup = BeautifulSoup(html, 'html.parser')
+                # get the price of each property in IDR
+                prices_usd = soup_usd.select('.other-price')
 
-                # get prices in usd
-                prices_usd = soup.select('.regular-price')
-
-                # make a beautiful soup object
-                soup = change_currency_n_get_soup(page, link)
-
-                # get the price of each property
+                # get the price of each property in IDR
                 prices = soup.select('.regular-price')
 
                 # get titles of each property
@@ -338,9 +363,17 @@ def scraper(page, url, n_pages=90) -> pd.DataFrame:
                     date = get_shared_features(soup)
 
                 if 'villas' in url:
-                    price, price_usd, year_built, land_size, building_size,\
+
+                    # get the price of each property in IDR
+                    prices_usd = soup_usd.select('.regular-price')
+
+                    # get the price of each property in IDR
+                    prices = soup.select('.regular-price')
+
+                    price, price_usd, payment_period, payment_period_usd,\
+                        year_built, land_size, building_size,\
                         pool, furnished, rooms = get_only_villas_features(
-                            soup, description_items, prices, prices_usd)
+                                soup, description_items, prices, prices_usd)
 
                     detail = {
                         'Title': [
@@ -348,6 +381,8 @@ def scraper(page, url, n_pages=90) -> pd.DataFrame:
                         'Upload Date': date,
                         'Price (USD)': price_usd,
                         'Price (IDR)': price,
+                        'Payment Period (USD)': payment_period_usd,
+                        'Payment Period (IDR)': payment_period,
                         'Code': [
                             code.text.strip() for code in codes][0],
                         'Location': colswidth20_item[0].split('\n')[-1],
@@ -368,9 +403,10 @@ def scraper(page, url, n_pages=90) -> pd.DataFrame:
                     details.append(detail)
 
                 else:
-                    price, price_usd = get_only_lands_features(
-                        prices,
-                        prices_usd)
+                    price, price_usd, payment_period, \
+                        payment_period_usd = get_only_lands_features(
+                            prices,
+                            prices_usd)
 
                     detail = {
                         'Title': [
@@ -378,6 +414,8 @@ def scraper(page, url, n_pages=90) -> pd.DataFrame:
                         'Upload Date': date,
                         'Price (USD)': price_usd,
                         'Price (IDR)': price,
+                        'Payment Period (USD)': payment_period_usd,
+                        'Payment Period (IDR)': payment_period,
                         'Code': [
                             code.text.strip() for code in codes][0],
                         'Location': colswidth20_item[0].split('\n')[-1],
@@ -432,11 +470,11 @@ def main(url_lands, url_villas):
             df_lands = scraper(
                 page,
                 url=URL_LANDS,
-                n_pages=num_lands-1)
+                n_pages=2)
             df_villas = scraper(
                 page,
                 url=URL_VILLAS,
-                n_pages=num_villas-num_villas)
+                n_pages=2)
 
             # Merge both
             df_new = pd.concat([df_villas, df_lands])
@@ -458,8 +496,6 @@ if __name__ == '__main__':
     # path of the scraper
     PATH = os.path.dirname(os.path.dirname(__file__))
 
-    print(PATH)
-
     # load environment keys
     load_dotenv(f"{PATH}/keys.env")
 
@@ -476,8 +512,10 @@ if __name__ == '__main__':
         'Current Scrape Date',
         'Original Price (USD)',
         'Price (USD)',
+        'Payment Period (USD)',
         'Original Price (IDR)',
         'Price (IDR)',
+        'Payment Period (IDR)',
         'Location',
         'Type of Sale',
         'Lease Years',
