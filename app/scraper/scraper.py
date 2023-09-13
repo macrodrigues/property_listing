@@ -92,7 +92,8 @@ def obtain_links(page, base_url, website_page) -> list:
             soup.select('.box.property-item')]
 
 
-def change_currency_n_get_soup(page, property_link, currency='USD') -> object:
+def change_currency_n_get_soup(page, property_link,
+                               currency='USD', idr_flag=0) -> object:
     """ This function takes the property link and returns a beautiful soup
     element.
 
@@ -107,11 +108,18 @@ def change_currency_n_get_soup(page, property_link, currency='USD') -> object:
     # Click on the currency dropdown
     page.click('.header-cur')
 
-    # then locate the currency IDR and click
-    page.locator(f"text={currency}").first.click()
+    # locate the currency IDR or USD and click
+    if currency == 'USD':
+        if idr_flag == 1:
+            page.locator(f"text={currency}").nth(1).click()
+        else:
+            page.locator(f"text={currency}").nth(2).click()
+
+    else:
+        page.locator(f"text={currency}").nth(0).click()
 
     # print to know that the currency was changed
-    print(f"Currency changed to {currency}!")
+    # print(f"Currency changed to {currency}!")
 
     html = page.inner_html('body')
 
@@ -250,27 +258,19 @@ def get_only_villas_features(soup, description_items, prices, prices_usd):
 
     def get_price_parameters(prices):
         try:
-            price = [price.text.strip().split(' ')[1]
-                     .replace(',', '') for price in prices][0]
-            price = float(price.replace(',', ''))
+            price = [price.text.strip() for price in prices][0]
+            price = ''.join(re.findall(r'[\d.]+', price))
+            price = float(price)
             payment_period = 'one time'
         except Exception as error:
-            if 'Request' in str(error):
-                price = 0
-                payment_period = 'on request'
-                print(error, ': FIXED!')
-            if 'price' in str(error):
-                price = 0
-                payment_period = 'on request'
-                print(error, ': FIXED!')
+            price = 0.0
+            payment_period = 'on request'
+            print(str(error), ': FIXED!')
 
         return price, payment_period
 
-    try:
-        price_usd, payment_period_usd = get_price_parameters(prices_usd)
-        price, payment_period = get_price_parameters(prices)
-    except Exception as error:
-        print(error)
+    price_usd, payment_period_usd = get_price_parameters(prices_usd)
+    price, payment_period = get_price_parameters(prices)
 
     return price, price_usd,\
         payment_period, payment_period_usd,\
@@ -299,8 +299,7 @@ def get_only_villas_rents_features(soup, description_items):
     return land_size, building_size, pool, bedrooms, bathrooms
 
 
-def get_renting_prices_periods(prices, prices_usd,
-                               properties_type='villas') -> str:
+def get_renting_prices_periods(prices, prices_usd) -> str:
     """ This function returns only the elements that are specific for lands.
     They might be the same as the ones for villas, but the scraping process
     changes.
@@ -312,32 +311,24 @@ def get_renting_prices_periods(prices, prices_usd,
 
     def get_price_parameters(prices):
         price_string = [price.text.strip() for price in prices][0].strip()
-        if properties_type == 'villas':
-            price = price_string.split(' ')[2]
-        else:
-            price = price_string.split(' ')[1]
-        if '/' in price_string:
-            payment_period = price_string.split(' / ')[1]
-            if '\n' in payment_period:
-                payment_period = payment_period.split('\n')[0]
-        else:
-            payment_period = None
-
         try:
-            price = float(price.replace(',', ''))
+            price = float(''.join(re.findall(r'[\d.]+', price_string)))
+            if '/' in price_string:
+                payment_period = price_string.split(' / ')[1]
+                if '\n' in payment_period:
+                    payment_period = payment_period.split('\n')[0]
+            else:
+                payment_period = None
+
         except Exception as error:
-            print(error)
-            price = 0
+            price = 0.0
             payment_period = 'on request'
+            print(str(error), ' :FIXED')
 
         return price, payment_period
 
-    try:
-        price_usd, payment_period_usd = get_price_parameters(prices_usd)
-        price, payment_period = get_price_parameters(prices)
-
-    except Exception as error:
-        print(error)
+    price_usd, payment_period_usd = get_price_parameters(prices_usd)
+    price, payment_period = get_price_parameters(prices)
 
     return price, price_usd, payment_period, payment_period_usd
 
@@ -373,7 +364,7 @@ def gen_detail_dict(
     }
 
 
-def scraper(page, url, n_pages=90) -> pd.DataFrame:
+def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
     """ This function takes all the other functions to build the scraping
     process.
 
@@ -384,101 +375,106 @@ def scraper(page, url, n_pages=90) -> pd.DataFrame:
     Finally it creates a data frame for villas or lands and saves it as a .csv.
     """
     details = []
-
     for website_page in range(n_pages):
         print('page: ', website_page)
         property_links = obtain_links(page, url, website_page)
+        # add retries if it finds exception
+        max_retries = 4
         for link in property_links:
-            try:
-                # make a beautiful soup object and convert to USD
-                soup_usd = change_currency_n_get_soup(page, link, 'USD')
+            retries = 0
+            while retries <= max_retries:
+                try:
+                    # make a beautiful soup object and convert to USD
+                    soup_usd = change_currency_n_get_soup(
+                        page, link, 'USD', flag)
 
-                # make a beautiful soup object and convert to IDR
-                soup = change_currency_n_get_soup(page, link, 'IDR')
+                    # make a beautiful soup object and convert to IDR
+                    soup = change_currency_n_get_soup(
+                        page, link, 'IDR', flag)
+                    flag = 1
 
-                # get the price of each property in IDR
-                prices_usd = soup_usd.select('.regular-price')
+                    # get the price of each property in IDR
+                    prices_usd = soup_usd.select('.regular-price')
 
-                # get the price of each property in IDR
-                prices = soup.select('.regular-price')
+                    # get the price of each property in IDR
+                    prices = soup.select('.regular-price')
 
-                # get titles of each property
-                titles = soup.select('.name')
-                title = [title.text.strip() for title in titles][0]
+                    # get titles of each property
+                    titles = soup.select('.name')
+                    title = [title.text.strip() for title in titles][0]
 
-                # get codes of each property
-                codes = soup.select('.code')
-                code = [code.text.strip() for code in codes][0]
+                    # get codes of each property
+                    codes = soup.select('.code')
+                    code = [code.text.strip() for code in codes][0]
 
-            except Exception as error:
-                print(error)
-                time.sleep(60)
-                continue
+                    type_sale, hold_years, description_items,\
+                        date, location = get_shared_features(soup)
 
-            try:
-                type_sale, hold_years, description_items,\
-                    date, location = get_shared_features(soup)
+                    if 'villas-for-sale' in url:
+                        price, price_usd, payment_period, payment_period_usd,\
+                            year_built, land_size, building_size,\
+                            pool, furnished, bedrooms,\
+                            bathrooms = get_only_villas_features(
+                                soup, description_items, prices, prices_usd)
 
-                if 'villas-for-sale' in url:
-                    price, price_usd, payment_period, payment_period_usd,\
-                        year_built, land_size, building_size,\
-                        pool, furnished, bedrooms,\
-                        bathrooms = get_only_villas_features(
-                            soup, description_items, prices, prices_usd)
+                        detail = gen_detail_dict(
+                            title, date, price_usd, price, payment_period_usd,
+                            payment_period, code, location, type_sale,
+                            hold_years, link, 'villa', year_built,
+                            bedrooms, bathrooms,
+                            land_size, building_size, pool, furnished)
 
-                    detail = gen_detail_dict(
-                        title, date, price_usd, price, payment_period_usd,
-                        payment_period, code, location, type_sale, hold_years,
-                        link, 'villa', year_built, bedrooms, bathrooms,
-                        land_size, building_size, pool, furnished)
+                        details.append(detail)
 
-                    print(detail)
-                    details.append(detail)
+                    if 'villas-for-rent' in url:
+                        price, price_usd, payment_period, \
+                            payment_period_usd = get_renting_prices_periods(
+                                prices,
+                                prices_usd)
 
-                if 'villas-for-rent' in url:
-                    price, price_usd, payment_period, \
-                        payment_period_usd = get_renting_prices_periods(
-                            prices,
-                            prices_usd,
-                            'villas')
+                        land_size, building_size,\
+                            pool, bedrooms,\
+                            bathrooms = get_only_villas_rents_features(
+                                soup,
+                                description_items)
 
-                    land_size, building_size,\
-                        pool, bedrooms,\
-                        bathrooms = get_only_villas_rents_features(
-                            soup,
-                            description_items)
+                        detail = gen_detail_dict(
+                            title, date, price_usd, price, payment_period_usd,
+                            payment_period, code, location, None, None,
+                            link, 'villa', None, bedrooms, bathrooms,
+                            land_size, building_size, pool, None)
 
-                    detail = gen_detail_dict(
-                        title, date, price_usd, price, payment_period_usd,
-                        payment_period, code, location, None, None,
-                        link, 'villa', None, bedrooms, bathrooms,
-                        land_size, building_size, pool, None)
+                        details.append(detail)
 
-                    print(detail)
-                    details.append(detail)
+                    if 'land' in url:
+                        price, price_usd, payment_period, \
+                            payment_period_usd = get_renting_prices_periods(
+                                prices,
+                                prices_usd)
 
-                if 'land' in url:
-                    price, price_usd, payment_period, \
-                        payment_period_usd = get_renting_prices_periods(
-                            prices,
-                            prices_usd,
-                            'lands')
+                        land_size = description_items[3].split('\n')[1].strip()
 
-                    land_size = description_items[3].split('\n')[1].strip()
+                        detail = gen_detail_dict(
+                            title, date, price_usd, price, payment_period_usd,
+                            payment_period, code, location, type_sale,
+                            hold_years, link, 'land', None, None, None,
+                            land_size, None, None, None)
 
-                    detail = gen_detail_dict(
-                        title, date, price_usd, price, payment_period_usd,
-                        payment_period, code, location, type_sale, hold_years,
-                        link, 'land', None, None, None,
-                        land_size, None, None, None)
+                        details.append(detail)
 
-                    print(detail)
-                    details.append(detail)
+                    print(link, ': PASS')
+                    break
 
-            except Exception as error:
-                print(error)
-                print(link)
-            continue
+                except Exception as error:
+                    print(error)
+                    print('FAIL')
+                    print('retrying...')
+                    retries += 1
+                    time.sleep(5)
+
+                if retries > max_retries:
+                    print("Max retries reached!")
+                    continue
 
     return pd.DataFrame(details)
 
@@ -488,7 +484,7 @@ def main(url_lands, url_villas, url_villas_rents):
     # "with" statement for exception handling
     with sync_playwright() as pw:
         # creates an instance of the Chromium browser and launches it
-        browser = pw.chromium.launch(headless=True)
+        browser = pw.chromium.launch(headless=False)
         # creates a new browser page (tab) within the browser instance
         page = browser.new_page()
 
@@ -510,15 +506,18 @@ def main(url_lands, url_villas, url_villas_rents):
             df_villas = scraper(
                 page,
                 url=URL_VILLAS,
-                n_pages=num_villas-1)
+                n_pages=5,
+                flag=0)
             df_villas_rents = scraper(
                 page,
                 url=URL_VILLAS_RENTS,
-                n_pages=num_villas_rents-1)
+                n_pages=5,
+                flag=1)
             df_lands = scraper(
                 page,
                 url=URL_LANDS,
-                n_pages=num_lands-1)
+                n_pages=5,
+                flag=1)
 
             # Merge both
             df_new = pd.concat([df_villas, df_lands, df_villas_rents])
