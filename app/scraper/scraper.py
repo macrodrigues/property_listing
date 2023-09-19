@@ -3,6 +3,7 @@
 # pylint: disable=broad-except
 import os
 import time
+import logging
 import re
 import datetime as dt
 from dotenv import load_dotenv
@@ -10,7 +11,6 @@ from playwright.sync_api import sync_playwright
 from google_access import pd, google_authentication
 from google_access import upload_to_google, read_from_google
 from bs4 import BeautifulSoup
-from rich import print
 
 
 def get_last_page_number(page, url) -> int:
@@ -49,7 +49,7 @@ def update_dataframe(df, df_previous) -> pd.DataFrame:
         df['Original Price (USD)'] = df['Price (USD)']
         df['Original Price (IDR)'] = df['Price (IDR)']
     else:  # Subsequent scrapes
-        print("Old already exists")
+        logger.info("Old already exists")
         df['Current Scrape Date'] = dt.datetime.now()\
             .strftime('%Y-%m-%d %H:%M:%S')
         # Merge old and new data
@@ -238,9 +238,9 @@ def get_only_villas_features(soup, description_items, prices, prices_usd):
             furnished = description_items[7]\
                 .split('\n')[1].strip().lower()
         except Exception as error:
-            print(error)
+            logger.error(error)
             furnished = None
-            print('furnished fixed!')
+            logger.info('furnished fixed!')
 
     else:
         year_built = None
@@ -252,9 +252,9 @@ def get_only_villas_features(soup, description_items, prices, prices_usd):
             furnished = description_items[6]\
                 .split('\n')[1].strip()
         except Exception as error:
-            print(error)
+            logger.error(error)
             furnished = None
-            print('furnished fixed!')
+            logger.info('furnished fixed!')
 
     def get_price_parameters(prices):
         try:
@@ -265,7 +265,7 @@ def get_only_villas_features(soup, description_items, prices, prices_usd):
         except Exception as error:
             price = 0.0
             payment_period = 'on request'
-            print(str(error), ': FIXED!')
+            logger.error(str(error), ': FIXED!')
 
         return price, payment_period
 
@@ -294,7 +294,7 @@ def get_only_villas_rents_features(soup, description_items):
     except Exception as error:
         building_size = description_items[5]\
             .split('\n')[1].strip()
-        print(str(error), ': FIXED')
+        logger.error(str(error), ': FIXED')
 
     return land_size, building_size, pool, bedrooms, bathrooms
 
@@ -323,7 +323,7 @@ def get_renting_prices_periods(prices, prices_usd, property_type) -> str:
             except Exception as error:
                 price = 0.0
                 payment_period = 'on request'
-                print(str(error), ' :FIXED')
+                logger.error(str(error), ' :FIXED')
         else:
             try:
                 if "\n" in raw_string:
@@ -351,7 +351,7 @@ def get_renting_prices_periods(prices, prices_usd, property_type) -> str:
             except Exception as error:
                 price = 0.0
                 payment_period = 'on request'
-                print(str(error), ' :FIXED')
+                logger.error(str(error), ' :FIXED')
 
         return price, payment_period
 
@@ -361,9 +361,6 @@ def get_renting_prices_periods(prices, prices_usd, property_type) -> str:
     price, payment_period = get_price_parameters(
         prices,
         property_type)
-
-    print("Price (USD): ", price_usd)
-    print("Period: ", payment_period_usd)
 
     return price, price_usd, payment_period, payment_period_usd
 
@@ -411,7 +408,7 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
     """
     details = []
     for website_page in range(n_pages):
-        print('page: ', website_page)
+        logger.info(f"page: {website_page}")
         property_links = obtain_links(page, url, website_page)
         # add retries if it finds exception
         max_retries = 4
@@ -499,18 +496,18 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
 
                         details.append(detail)
 
-                    print(link, ': PASS')
+                    logger.info(f"{link}: PASS")
                     break
 
                 except Exception as error:
-                    print(error)
-                    print('FAIL')
-                    print('retrying...')
+                    logger.error(error)
+                    logger.info(f"{link}: FAIL")
+                    logger.info('retrying...')
                     retries += 1
                     time.sleep(5)
 
                 if retries > max_retries:
-                    print("Max retries reached!")
+                    logger.info("Max retries reached!")
                     continue
 
     return pd.DataFrame(details)
@@ -609,6 +606,13 @@ if __name__ == '__main__':
         'Building Size (sqm)',
         'Pool',
         'Furnished']
+
+    # Create and configure logger
+    logging.basicConfig(
+        filename=f"app/scraper/logs/log_{dt.datetime.today()}.log",
+        level=logging.NOTSET,
+        format='%(asctime)s | %(levelname)s: %(message)s')
+    logger = logging.getLogger()
 
     # run main function
     main(URL_LANDS, URL_VILLAS, URL_VILLAS_RENTS)
