@@ -1,6 +1,7 @@
 """ this script scrapes villas and lands from a property website."""
 
 # pylint: disable=broad-except
+# pylint: disable=import-error
 import os
 import time
 import logging
