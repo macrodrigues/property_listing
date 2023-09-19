@@ -1,4 +1,4 @@
-pip install requirements.txt
+pip install -r requirements.txt
 
 sudo apt-get install libasound2
 sudo apt-get install libgbm1

@@ -299,7 +299,7 @@ def get_only_villas_rents_features(soup, description_items):
     return land_size, building_size, pool, bedrooms, bathrooms
 
 
-def get_renting_prices_periods(prices, prices_usd) -> str:
+def get_renting_prices_periods(prices, prices_usd, property_type) -> str:
     """ This function returns only the elements that are specific for lands.
     They might be the same as the ones for villas, but the scraping process
     changes.
@@ -309,26 +309,61 @@ def get_renting_prices_periods(prices, prices_usd) -> str:
 
     """
 
-    def get_price_parameters(prices):
-        price_string = [price.text.strip() for price in prices][0].strip()
-        try:
-            price = float(''.join(re.findall(r'[\d.]+', price_string)))
-            if '/' in price_string:
-                payment_period = price_string.split(' / ')[1]
-                if '\n' in payment_period:
-                    payment_period = payment_period.split('\n')[0]
-            else:
-                payment_period = None
+    def get_price_parameters(prices, property_type):
+        raw_string = [price.text.strip() for price in prices][0].strip()
+        if property_type == 'villas':
+            try:
+                price_string = raw_string.split('/')[0]
+                price = float(''.join(re.findall(r'[\d.]+', price_string)))
+                if "\n" in raw_string:
+                    payment_period = raw_string.split("\n")[1]\
+                        .split('/')[1].strip()
+                else:
+                    payment_period = raw_string.split('/')[1].strip()
+            except Exception as error:
+                price = 0.0
+                payment_period = 'on request'
+                print(str(error), ' :FIXED')
+        else:
+            try:
+                if "\n" in raw_string:
+                    price_string = raw_string.split("\n")[0]
+                    if "/" in price_string:
+                        price = float(
+                            ''.join(re.findall(r'[\d.]+',
+                                               price_string.split("/")[0])))
+                        payment_period = price_string.split("/")[1]
+                    else:
+                        price = float(
+                            ''.join(re.findall(r'[\d.]+', price_string)))
+                        payment_period = 'one time'
+                else:
+                    if "/" in raw_string:
+                        price = float(
+                            ''.join(re.findall(r'[\d.]+',
+                                               raw_string.split("/")[0])))
+                        payment_period = raw_string.split("/")[1]
+                    else:
+                        price = float(
+                            ''.join(re.findall(r'[\d.]+', raw_string)))
+                        payment_period = 'one time'
 
-        except Exception as error:
-            price = 0.0
-            payment_period = 'on request'
-            print(str(error), ' :FIXED')
+            except Exception as error:
+                price = 0.0
+                payment_period = 'on request'
+                print(str(error), ' :FIXED')
 
         return price, payment_period
 
-    price_usd, payment_period_usd = get_price_parameters(prices_usd)
-    price, payment_period = get_price_parameters(prices)
+    price_usd, payment_period_usd = get_price_parameters(
+        prices_usd,
+        property_type)
+    price, payment_period = get_price_parameters(
+        prices,
+        property_type)
+
+    print("Price (USD): ", price_usd)
+    print("Period: ", payment_period_usd)
 
     return price, price_usd, payment_period, payment_period_usd
 
@@ -430,7 +465,8 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                         price, price_usd, payment_period, \
                             payment_period_usd = get_renting_prices_periods(
                                 prices,
-                                prices_usd)
+                                prices_usd,
+                                'villas')
 
                         land_size, building_size,\
                             pool, bedrooms,\
@@ -450,7 +486,8 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                         price, price_usd, payment_period, \
                             payment_period_usd = get_renting_prices_periods(
                                 prices,
-                                prices_usd)
+                                prices_usd,
+                                'lands')
 
                         land_size = description_items[3].split('\n')[1].strip()
 
@@ -484,7 +521,7 @@ def main(url_lands, url_villas, url_villas_rents):
     # "with" statement for exception handling
     with sync_playwright() as pw:
         # creates an instance of the Chromium browser and launches it
-        browser = pw.chromium.launch(headless=False)
+        browser = pw.chromium.launch(headless=True)
         # creates a new browser page (tab) within the browser instance
         page = browser.new_page()
 
@@ -506,21 +543,21 @@ def main(url_lands, url_villas, url_villas_rents):
             df_villas = scraper(
                 page,
                 url=URL_VILLAS,
-                n_pages=5,
-                flag=0)
+                n_pages=num_villas-1,
+                flag=0)  # flag parameter is used to adapt the currency click
             df_villas_rents = scraper(
                 page,
                 url=URL_VILLAS_RENTS,
-                n_pages=5,
+                n_pages=num_villas_rents-1,
                 flag=1)
             df_lands = scraper(
                 page,
                 url=URL_LANDS,
-                n_pages=5,
+                n_pages=num_lands-1,
                 flag=1)
 
             # Merge both
-            df_new = pd.concat([df_villas, df_lands, df_villas_rents])
+            df_new = pd.concat([df_villas, df_villas_rents, df_lands])
 
             # Update dataframe
             df_new = update_dataframe(df_new, df_old)

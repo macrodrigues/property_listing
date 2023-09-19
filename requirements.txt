@@ -1,6 +1,6 @@
 playwright
-beautifulsoup4==4.12.2
-gspread==5.11.1
-google-api-python-client==2.98.0
-google-auth-httplib2==0.1.0
-google-auth-oauthlib==1.0.0
+beautifulsoup4
+gspread
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
