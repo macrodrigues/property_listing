@@ -5,3 +5,4 @@ kib_data.csv
 keys.env
 credentials.json
 __pycache__
+logs
