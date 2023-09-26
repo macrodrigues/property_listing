@@ -38,31 +38,49 @@ def get_last_page_number(page, url) -> int:
 
 
 def update_dataframe(df, df_previous) -> pd.DataFrame:
-    """ This function takes a new and a old dataset.
+    """This function takes new and old datasets and updates the
+    old dataset with new data while preserving specific columns."""
 
-    It serves to trace the price changes on the platform.
+    logger.info(df_previous)
 
-    """
     if df_previous.empty:  # First-time scrape
-        df['First Scrape Date'] = dt.datetime.now()\
-            .strftime('%Y-%m-%d %H:%M:%S')
+        df['First Scrape Date'] = dt.datetime.now().strftime(
+            '%Y-%m-%d %H:%M:%S')
         df['Current Scrape Date'] = df['First Scrape Date']
         df['Original Price (USD)'] = df['Price (USD)']
         df['Original Price (IDR)'] = df['Price (IDR)']
     else:  # Subsequent scrapes
-        logger.info("Old already exists")
-        df['Current Scrape Date'] = dt.datetime.now()\
-            .strftime('%Y-%m-%d %H:%M:%S')
-        # Merge old and new data
+        logger.info("The Google Sheet is not empty!")
+        df['Current Scrape Date'] = dt.datetime.now().strftime(
+            '%Y-%m-%d %H:%M:%S')
+
+        # Merge old and new data, preserving selected columns
+        columns_to_preserve = [
+            'Code',
+            'First Scrape Date',
+            'Original Price (USD)',
+            'Original Price (IDR)']
         df_merged = pd.merge(
             df,
-            df_previous[[
-                'Code',
-                'First Scrape Date',
-                'Original Price (USD)',
-                'Original Price (IDR)']], on='Code', how='left')
+            df_previous[columns_to_preserve],
+            on='Code',
+            how='left')
 
-        df = df_merged
+        # Define a function to fill NaN values in specific columns with values
+        # from the same row
+        def fillna_from_same_row(row):
+            if pd.isna(row['First Scrape Date']):
+                row['First Scrape Date'] = row['Current Scrape Date']
+            if pd.isna(row['Original Price (USD)']):
+                row['Original Price (USD)'] = row['Price (USD)']
+            if pd.isna(row['Original Price (IDR)']):
+                row['Original Price (IDR)'] = row['Price (IDR)']
+            return row
+
+        # Apply the fillna_from_same_row function row-wise to fill NaN values
+        df_merged = df_merged.apply(fillna_from_same_row, axis=1)
+
+        df = df_merged.sort_values('First Scrape Date', ascending=False)
 
     return df
 
@@ -119,14 +137,7 @@ def change_currency_n_get_soup(page, property_link,
     else:
         page.locator(f"text={currency}").nth(0).click()
 
-    # print to know that the currency was changed
-    # print(f"Currency changed to {currency}!")
-
-    html = page.inner_html('body')
-
-    soup = BeautifulSoup(html, 'html.parser')
-
-    return soup
+    return BeautifulSoup(page.inner_html('body'), 'html.parser')
 
 
 def get_shared_features(soup):
@@ -142,13 +153,6 @@ def get_shared_features(soup):
     - date: the date of the upload, by using the image src
 
     """
-    # get date using the image
-    img_src = soup.select('figure')[0].find_all('img')[0].get('src')
-    date = img_src.split('/')[-1].split('-property')[0]
-    pattern = r"^\d{4}-\d{2}-\d{2}$"
-
-    if not re.match(pattern, date):
-        date = None
 
     # get elements inside colswidth20
     colswidth20_items = soup.select('.colswidth20')
@@ -162,14 +166,16 @@ def get_shared_features(soup):
 
     # get location
     location = colswidth20_item[0].split('\n')[-1]
+    if '-' in location:
+        location = 'Unknown'
 
     # get years if lease
     if type_sale == 'leasehold':
         hold_years = colswidth20_item[1] \
             .split('\n')[3].split('/ ')[1]
-        hold_years = hold_years.split(' y')[0]
+        hold_years = int(hold_years.split(' y')[0])
     else:
-        hold_years = None
+        hold_years = 0
 
     # get items of property's description
     property_description = soup.select(
@@ -183,7 +189,7 @@ def get_shared_features(soup):
             description_items.append(
                 paragraph.text.strip())
 
-    return type_sale, hold_years, description_items, date, location
+    return type_sale, hold_years, description_items, location
 
 
 def get_rooms_and_pool(soup):
@@ -200,8 +206,8 @@ def get_rooms_and_pool(soup):
         for paragraph in items:
             rooms.append(paragraph.text.strip())
 
-    bedrooms = rooms[3].split('\n')[1]
-    bathrooms = rooms[5]
+    bedrooms = int(rooms[3].split('\n')[1])
+    bathrooms = int(rooms[5])
 
     # check for available facilities
     facilities = soup.select('.flexbox-wrap')
@@ -231,42 +237,42 @@ def get_only_villas_features(soup, description_items, prices, prices_usd):
     if 'Year Built' in description_items[5]:
         year_built = description_items[5]
         year_built = year_built.split(': ')[1]
-        land_size = description_items[3]\
-            .split('\n')[1].strip()
-        building_size = description_items[6]\
-            .split('\n')[1].strip()
+        land_size = float(
+            description_items[3].split('\n')[1].strip())
+        building_size = float(
+            description_items[6].split('\n')[1].strip())
         try:
             furnished = description_items[7]\
                 .split('\n')[1].strip().lower()
         except Exception as error:
             logger.error(error)
-            furnished = None
+            furnished = "Unknown"
             logger.info('furnished fixed!')
 
     else:
-        year_built = None
-        land_size = description_items[3]\
-            .split('\n')[1].strip()
-        building_size = description_items[5]\
-            .split('\n')[1].strip()
+        year_built = "Unknown"
+        land_size = float(
+            description_items[3].split('\n')[1].strip())
+        building_size = float(
+            description_items[5].split('\n')[1].strip())
         try:
             furnished = description_items[6]\
                 .split('\n')[1].strip()
         except Exception as error:
-            logger.error(error)
-            furnished = None
+            furnished = "Unknown"
+            logger.error('%s: FIXED', str(error))
             logger.info('furnished fixed!')
 
     def get_price_parameters(prices):
         try:
             price = [price.text.strip() for price in prices][0]
             price = ''.join(re.findall(r'[\d.]+', price))
-            price = float(price)
+            price = int(price)
             payment_period = 'one time'
         except Exception as error:
-            price = 0.0
+            price = 0
             payment_period = 'on request'
-            logger.error(str(error), ': FIXED!')
+            logger.error('%s: FIXED', str(error))
 
         return price, payment_period
 
@@ -288,14 +294,14 @@ def get_only_villas_rents_features(soup, description_items):
     bedrooms, bathrooms, pool = get_rooms_and_pool(soup)
 
     try:
-        land_size = description_items[3]\
-            .split('\n')[1].strip()
-        building_size = description_items[4]\
-            .split('\n')[1].strip()
+        land_size = float(
+            description_items[3].split('\n')[1].strip())
+        building_size = float(
+            description_items[4].split('\n')[1].strip())
     except Exception as error:
-        building_size = description_items[5]\
-            .split('\n')[1].strip()
-        logger.error(str(error), ': FIXED')
+        building_size = float(
+            description_items[5].split('\n')[1].strip())
+        logger.error('%s: FIXED', str(error))
 
     return land_size, building_size, pool, bedrooms, bathrooms
 
@@ -315,44 +321,44 @@ def get_renting_prices_periods(prices, prices_usd, property_type) -> str:
         if property_type == 'villas':
             try:
                 price_string = raw_string.split('/')[0]
-                price = float(''.join(re.findall(r'[\d.]+', price_string)))
+                price = int(''.join(re.findall(r'[\d.]+', price_string)))
                 if "\n" in raw_string:
                     payment_period = raw_string.split("\n")[1]\
                         .split('/')[1].strip()
                 else:
                     payment_period = raw_string.split('/')[1].strip()
             except Exception as error:
-                price = 0.0
+                price = 0
                 payment_period = 'on request'
-                logger.error(str(error), ' :FIXED')
+                logger.error('%s :FIXED', str(error))
         else:
             try:
                 if "\n" in raw_string:
                     price_string = raw_string.split("\n")[0]
                     if "/" in price_string:
-                        price = float(
+                        price = int(
                             ''.join(re.findall(r'[\d.]+',
                                                price_string.split("/")[0])))
                         payment_period = price_string.split("/")[1]
                     else:
-                        price = float(
+                        price = int(
                             ''.join(re.findall(r'[\d.]+', price_string)))
                         payment_period = 'one time'
                 else:
                     if "/" in raw_string:
-                        price = float(
+                        price = int(
                             ''.join(re.findall(r'[\d.]+',
                                                raw_string.split("/")[0])))
                         payment_period = raw_string.split("/")[1]
                     else:
-                        price = float(
+                        price = int(
                             ''.join(re.findall(r'[\d.]+', raw_string)))
                         payment_period = 'one time'
 
             except Exception as error:
-                price = 0.0
+                price = 0
                 payment_period = 'on request'
-                logger.error(str(error), ' :FIXED')
+                logger.error('%s :FIXED', str(error))
 
         return price, payment_period
 
@@ -367,7 +373,7 @@ def get_renting_prices_periods(prices, prices_usd, property_type) -> str:
 
 
 def gen_detail_dict(
-    title, date, price_usd, price, payment_period_usd, payment_period,
+    title, price_usd, price, payment_period_usd, payment_period,
     code, location, type_sale, hold_years, link, property_type, year_built,
         bedrooms, bathrooms, land_size,
         building_size, pool, furnished) -> dict:
@@ -376,7 +382,6 @@ def gen_detail_dict(
 
     return {
         'Title': title,
-        'Upload Date': date,
         'Price (USD)': price_usd,
         'Price (IDR)': price,
         'Payment Period (USD)': payment_period_usd,
@@ -409,10 +414,10 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
     """
     details = []
     for website_page in range(n_pages):
-        logger.info(f"page: {website_page}")
+        logger.info("Page: %s", website_page)
         property_links = obtain_links(page, url, website_page)
         # add retries if it finds exception
-        max_retries = 4
+        max_retries = 20
         for link in property_links:
             retries = 0
             while retries <= max_retries:
@@ -441,7 +446,7 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                     code = [code.text.strip() for code in codes][0]
 
                     type_sale, hold_years, description_items,\
-                        date, location = get_shared_features(soup)
+                        location = get_shared_features(soup)
 
                     if 'villas-for-sale' in url:
                         price, price_usd, payment_period, payment_period_usd,\
@@ -451,7 +456,7 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                                 soup, description_items, prices, prices_usd)
 
                         detail = gen_detail_dict(
-                            title, date, price_usd, price, payment_period_usd,
+                            title, price_usd, price, payment_period_usd,
                             payment_period, code, location, type_sale,
                             hold_years, link, 'villa', year_built,
                             bedrooms, bathrooms,
@@ -473,10 +478,10 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                                 description_items)
 
                         detail = gen_detail_dict(
-                            title, date, price_usd, price, payment_period_usd,
-                            payment_period, code, location, None, None,
-                            link, 'villa', None, bedrooms, bathrooms,
-                            land_size, building_size, pool, None)
+                            title, price_usd, price, payment_period_usd,
+                            payment_period, code, location, "Unknown", 0,
+                            link, 'villa', "Unknown", bedrooms, bathrooms,
+                            land_size, building_size, pool, "Unknown")
 
                         details.append(detail)
 
@@ -487,25 +492,29 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                                 prices_usd,
                                 'lands')
 
-                        land_size = description_items[3].split('\n')[1].strip()
+                        try:
+                            land_size = float(
+                                description_items[3].split('\n')[1].strip())
+                        except Exception as error:
+                            land_size = 0.0
+                            logger.error("%x : FIXED", str(error))
 
                         detail = gen_detail_dict(
-                            title, date, price_usd, price, payment_period_usd,
+                            title, price_usd, price, payment_period_usd,
                             payment_period, code, location, type_sale,
-                            hold_years, link, 'land', None, None, None,
-                            land_size, None, None, None)
+                            hold_years, link, 'land', "Unknown", 0, 0,
+                            land_size, 0.0, 'No', 'No')
 
                         details.append(detail)
 
-                    logger.info(f"{link}: PASS")
+                    logger.info("%s: PASS", link)
                     break
 
                 except Exception as error:
-                    logger.error(error)
-                    logger.info(f"{link}: FAIL")
+                    logger.info("%s: FAIL", str(error))
                     logger.info('retrying...')
                     retries += 1
-                    time.sleep(5)
+                    time.sleep(10)
 
                 if retries > max_retries:
                     logger.info("Max retries reached!")
@@ -541,17 +550,17 @@ def main(url_lands, url_villas, url_villas_rents):
             df_villas = scraper(
                 page,
                 url=URL_VILLAS,
-                n_pages=num_villas-1,
+                n_pages=2,
                 flag=0)  # flag parameter is used to adapt the currency click
             df_villas_rents = scraper(
                 page,
                 url=URL_VILLAS_RENTS,
-                n_pages=num_villas_rents-1,
+                n_pages=4,
                 flag=1)
             df_lands = scraper(
                 page,
                 url=URL_LANDS,
-                n_pages=num_lands-1,
+                n_pages=4,
                 flag=1)
 
             # Merge both
@@ -565,6 +574,9 @@ def main(url_lands, url_villas, url_villas_rents):
 
             # Upload to Google Sheet with new information
             upload_to_google(df_new, worksheet)
+
+        except Exception as error:
+            logger.info("%s: FAIL", str(error))
 
         finally:
             page.close()
@@ -586,7 +598,6 @@ if __name__ == '__main__':
     column_order = [
         'Title',
         'Code',
-        'Upload Date',
         'First Scrape Date',
         'Current Scrape Date',
         'Original Price (USD)',
@@ -610,7 +621,7 @@ if __name__ == '__main__':
 
     # Create and configure logger
     logging.basicConfig(
-        filename=f"app/scraper/logs/log_{dt.datetime.today()}.log",
+        filename=f"{PATH}/scraper/logs/log_{dt.datetime.today()}.log",
         level=logging.NOTSET,
         format='%(asctime)s | %(levelname)s: %(message)s')
     logger = logging.getLogger()

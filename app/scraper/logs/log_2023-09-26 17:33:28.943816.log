@@ -1,0 +1,162 @@
+2023-09-26 17:33:28,944 | DEBUG: Using selector: EpollSelector
+2023-09-26 17:33:32,948 | DEBUG: Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=None, status=None)
+2023-09-26 17:33:32,951 | DEBUG: Making request: POST https://oauth2.googleapis.com/token
+2023-09-26 17:33:32,952 | DEBUG: Starting new HTTPS connection (1): oauth2.googleapis.com:443
+2023-09-26 17:33:33,106 | DEBUG: https://oauth2.googleapis.com:443 "POST /token HTTP/1.1" 200 None
+2023-09-26 17:33:33,107 | DEBUG: Starting new HTTPS connection (1): sheets.googleapis.com:443
+2023-09-26 17:33:33,565 | DEBUG: https://sheets.googleapis.com:443 "GET /v4/spreadsheets/1HP5RYHmyaTr0PmEo8pWtoHUsG45vsEUKPJViRjC0fAA?includeGridData=false HTTP/1.1" 200 None
+2023-09-26 17:33:33,797 | DEBUG: https://sheets.googleapis.com:443 "GET /v4/spreadsheets/1HP5RYHmyaTr0PmEo8pWtoHUsG45vsEUKPJViRjC0fAA?includeGridData=false HTTP/1.1" 200 None
+2023-09-26 17:33:34,087 | DEBUG: https://sheets.googleapis.com:443 "GET /v4/spreadsheets/1HP5RYHmyaTr0PmEo8pWtoHUsG45vsEUKPJViRjC0fAA/values/%27Sheet1%27 HTTP/1.1" 200 None
+2023-09-26 17:33:34,108 | INFO: Page: 0
+2023-09-26 17:33:38,040 | INFO: https://www.villabalisale.com/property/villas-for-sale/PERFECT-HIDEAWAY-APARTMENT-IN-UBUD-WITH-ONE-SECLUDED-BEDROOM: PASS
+2023-09-26 17:33:41,190 | INFO: https://www.villabalisale.com/property/villas-for-sale/High-quality-four-bedroom-villa-in-Canggu: PASS
+2023-09-26 17:33:44,851 | INFO: https://www.villabalisale.com/property/villas-for-sale/luxurious-mezzanine-in-pecatu: PASS
+2023-09-26 17:33:47,771 | INFO: https://www.villabalisale.com/property/villas-for-sale/stunning-villa-for-sale-in-prime-location-of-drupadi: PASS
+2023-09-26 17:33:50,752 | ERROR: invalid literal for int() with base 10: '': FIXED
+2023-09-26 17:33:50,752 | ERROR: invalid literal for int() with base 10: '': FIXED
+2023-09-26 17:33:50,752 | INFO: https://www.villabalisale.com/property/villas-for-sale/brand-new-hotel-with-long-lease-for-sale-in-the-heart-of-seminyak: PASS
+2023-09-26 17:33:53,750 | ERROR: invalid literal for int() with base 10: '': FIXED
+2023-09-26 17:33:53,751 | ERROR: invalid literal for int() with base 10: '': FIXED
+2023-09-26 17:33:53,751 | INFO: https://www.villabalisale.com/property/villas-for-sale/off-plan-luxury-living-of-8-bedroom-villa-in-tumbak-bayuh: PASS
+2023-09-26 17:33:57,232 | INFO: https://www.villabalisale.com/property/villas-for-sale/spacious-modern-3-bedroom-villa-in-canggu-for-sale: PASS
+2023-09-26 17:34:01,648 | INFO: https://www.villabalisale.com/property/villas-for-sale/upcoming-three-bedroom-villa-comfort-and-charm-in-tumbak-bayuh: PASS
+2023-09-26 17:34:04,744 | INFO: https://www.villabalisale.com/property/villas-for-sale/Modern-Single-Bedroom-Villa-in-Canggu: PASS
+2023-09-26 17:34:07,805 | INFO: https://www.villabalisale.com/property/villas-for-sale/Freehold-property-walking-distance-to-the-beach-in-Batu-Belig: PASS
+2023-09-26 17:34:07,805 | INFO: Page: 1
+2023-09-26 17:34:12,181 | INFO: https://www.villabalisale.com/property/villas-for-sale/Brand-New-Loft-Apartment-for-Sale-in-Berawa: PASS
+2023-09-26 17:34:15,149 | INFO: https://www.villabalisale.com/property/villas-for-sale/New-modern-two-bedroom-property-for-lease-in-Padonan: PASS
+2023-09-26 17:34:18,242 | INFO: https://www.villabalisale.com/property/villas-for-sale/Ocean-View-Estate-With-Long-Lease: PASS
+2023-09-26 17:34:22,097 | INFO: https://www.villabalisale.com/property/villas-for-sale/UP-COMING-TROPICAL-MEDITERRANEAN-1-BEDROOM-VILLA-IN-SESEH: PASS
+2023-09-26 17:34:25,181 | INFO: https://www.villabalisale.com/property/villas-for-sale/stylish-real-estate-in-seminyak: PASS
+2023-09-26 17:34:28,254 | INFO: https://www.villabalisale.com/property/villas-for-sale/New-beautiful-two-bedroom-villas-for-lease-in-Balangan: PASS
+2023-09-26 17:34:32,742 | INFO: https://www.villabalisale.com/property/villas-for-sale/tropical-contemporary-3-bedroom-villa-in-padang-padang-area: PASS
+2023-09-26 17:34:35,763 | INFO: https://www.villabalisale.com/property/villas-for-sale/Exclusive-and-Luxurious-Villa-with-Massive-Courtyard-in-Kayu-Tulang-for-Sale: PASS
+2023-09-26 17:34:38,904 | INFO: https://www.villabalisale.com/property/villas-for-sale/up-coming-warm-and-cozy-3bedroom-villa-in-benoa-for-sale: PASS
+2023-09-26 17:34:41,902 | INFO: https://www.villabalisale.com/property/villas-for-sale/up-coming-stylish-and-spacious-2bedroom-villa-in-benoa-for-sale: PASS
+2023-09-26 17:34:41,903 | INFO: Page: 0
+2023-09-26 17:34:46,244 | INFO: https://www.villabalisale.com/property/villas-for-rent/under-renovation-luxury-four-bedrooms-closed-living-villa-in-umalas: PASS
+2023-09-26 17:34:49,405 | INFO: https://www.villabalisale.com/property/villas-for-rent/amazing-tropical-style-three-bedroom-open-living-villa-in-padang-linjong-canggu: PASS
+2023-09-26 17:34:52,748 | INFO: https://www.villabalisale.com/property/villas-for-rent/cozy-four-bedroom-teak-wooden-open-living-villa-in-kuwum-kerobokan: PASS
+2023-09-26 17:34:56,007 | INFO: https://www.villabalisale.com/property/villas-for-rent/amazing-five-bedroom-open-living-villa-five-minute-to-the-beach: PASS
+2023-09-26 17:34:59,499 | INFO: https://www.villabalisale.com/property/villas-for-rent/modern-one-bedroom-closed-living-house-in-berawa: PASS
+2023-09-26 17:35:02,369 | ERROR: could not convert string to float: 'free hold': FIXED
+2023-09-26 17:35:02,370 | INFO: https://www.villabalisale.com/property/villas-for-rent/beautiful-three-bedroom-boutique-villa-situated-in-canggu: PASS
+2023-09-26 17:35:05,133 | INFO: https://www.villabalisale.com/property/villas-for-rent/stylish-two-bedroom-modern-open-living-room-villa-set-in-tumbak-bayuh: PASS
+2023-09-26 17:35:08,236 | ERROR: list index out of range: FIXED
+2023-09-26 17:35:08,236 | INFO: https://www.villabalisale.com/property/villas-for-rent/luxury-three-bedroom-enclosed-living-villa-set-in-pererenan: PASS
+2023-09-26 17:35:11,576 | INFO: https://www.villabalisale.com/property/villas-for-rent/beautiful-five-bedroom-villa-situated-in-the-pererenan-area: PASS
+2023-09-26 17:35:14,739 | ERROR: list index out of range: FIXED
+2023-09-26 17:35:14,739 | INFO: https://www.villabalisale.com/property/villas-for-rent/beautiful-one-bedroom-sharing-pool-villa-located-in-seminyak: PASS
+2023-09-26 17:35:14,739 | INFO: Page: 1
+2023-09-26 17:35:18,596 | INFO: https://www.villabalisale.com/property/villas-for-rent/stunning-four-bedroom-villa-walking-distance-to-the-canggu-beach: PASS
+2023-09-26 17:35:21,790 | INFO: https://www.villabalisale.com/property/villas-for-rent/gorgeous-three-bedroom-villa-walking-distance-to-canggu-beach: PASS
+2023-09-26 17:35:24,679 | INFO: https://www.villabalisale.com/property/villas-for-rent/stunning-three-bedrooms-enclosed-living-villa-situated-in-berawa: PASS
+2023-09-26 17:35:27,480 | ERROR: list index out of range: FIXED
+2023-09-26 17:35:27,481 | INFO: https://www.villabalisale.com/property/villas-for-rent/amazing-two-bedrooms-closed-living-apartment-in-canggu: PASS
+2023-09-26 17:35:30,530 | ERROR: list index out of range: FIXED
+2023-09-26 17:35:30,531 | INFO: https://www.villabalisale.com/property/villas-for-rent/high-end-luxury-four-bedrooms-closed-living-villa-in-umalas: PASS
+2023-09-26 17:35:33,407 | INFO: https://www.villabalisale.com/property/villas-for-rent/beautiful-three-bedroom-open-living-room-villa-set-in-umalas: PASS
+2023-09-26 17:35:36,335 | INFO: https://www.villabalisale.com/property/villas-for-rent/brand-new-three-bedroom-villa-with-rice-field-view-in-padonan: PASS
+2023-09-26 17:35:39,334 | INFO: https://www.villabalisale.com/property/villas-for-rent/charming-three-bedroom-complex-villa-located-in-canggu-area: PASS
+2023-09-26 17:35:42,230 | ERROR: list index out of range: FIXED
+2023-09-26 17:35:42,230 | INFO: https://www.villabalisale.com/property/villas-for-rent/stunning-three-bedroom-villa-well-located-in-umalas: PASS
+2023-09-26 17:35:45,090 | ERROR: list index out of range: FIXED
+2023-09-26 17:35:45,091 | INFO: https://www.villabalisale.com/property/villas-for-rent/charming-three-bedroom-villa-well-positioned-in-canggu-will-be-available-1st-of-september-2023: PASS
+2023-09-26 17:35:45,091 | INFO: Page: 2
+2023-09-26 17:35:48,954 | INFO: https://www.villabalisale.com/property/villas-for-rent/chick-two-bedrooms-closed-living-villa-located-in-canggu: PASS
+2023-09-26 17:35:52,203 | ERROR: list index out of range: FIXED
+2023-09-26 17:35:52,203 | INFO: https://www.villabalisale.com/property/villas-for-rent/stylish-one-bedroom-private-pool-villa-with-sea-view-in-uluwatu: PASS
+2023-09-26 17:35:55,222 | ERROR: list index out of range: FIXED
+2023-09-26 17:35:55,222 | INFO: https://www.villabalisale.com/property/villas-for-rent/beautiful-one-bedroom-open-living-room-villa-set-in-seminyak: PASS
+2023-09-26 17:35:58,042 | INFO: https://www.villabalisale.com/property/villas-for-rent/charming-one-bedroom-open-living-room-villa-situated-in-seminyak: PASS
+2023-09-26 17:36:00,663 | INFO: https://www.villabalisale.com/property/villas-for-rent/beautiful-three-bedrooms-open-living-villa-in-prime-location-seminyak: PASS
+2023-09-26 17:36:03,632 | ERROR: list index out of range: FIXED
+2023-09-26 17:36:03,633 | INFO: https://www.villabalisale.com/property/villas-for-rent/brand-new-three-bedroom-enclosed-living-villa-strategically-located-in-seminyak: PASS
+2023-09-26 17:36:06,822 | INFO: https://www.villabalisale.com/property/villas-for-rent/beautiful-three-bedroom-enclosed-living-villa-located-in-seminyak: PASS
+2023-09-26 17:36:09,853 | ERROR: list index out of range: FIXED
+2023-09-26 17:36:09,853 | INFO: https://www.villabalisale.com/property/villas-for-rent/homey-three-bedroom-villa-strategically-located-in-seminyak: PASS
+2023-09-26 17:36:12,868 | ERROR: list index out of range: FIXED
+2023-09-26 17:36:12,868 | INFO: https://www.villabalisale.com/property/villas-for-rent/homey-two-bedroom-open-living-villa-nestled-in-tegal-cupek: PASS
+2023-09-26 17:36:15,894 | INFO: https://www.villabalisale.com/property/villas-for-rent/stylish-two-bedroom-open-living-villa-nestled-in-tegal-cupek: PASS
+2023-09-26 17:36:15,894 | INFO: Page: 3
+2023-09-26 17:36:19,974 | ERROR: list index out of range: FIXED
+2023-09-26 17:36:19,974 | INFO: https://www.villabalisale.com/property/villas-for-rent/stunning-three-bedrooms-enclosed-living-villa-walking-distance-to-cemagi-beach: PASS
+2023-09-26 17:36:22,983 | INFO: https://www.villabalisale.com/property/villas-for-rent/homey-four-bedroom-villa-located-in-ungasan: PASS
+2023-09-26 17:36:26,006 | INFO: https://www.villabalisale.com/property/villas-for-rent/charming-three-bedroom-villa-full-furnished-with-good-location-in-berawa: PASS
+2023-09-26 17:36:28,874 | INFO: https://www.villabalisale.com/property/villas-for-rent/beautiful-three-bedroom-closed-living-villa-in-berawa: PASS
+2023-09-26 17:36:31,629 | ERROR: list index out of range: FIXED
+2023-09-26 17:36:31,629 | INFO: https://www.villabalisale.com/property/villas-for-rent/stunning-three-bedroom-open-living-villa-with-rooftop-in-berawa: PASS
+2023-09-26 17:36:35,033 | INFO: https://www.villabalisale.com/property/villas-for-rent/luxury-five-bedroom-villa-wonderfully-located-in-the-calming-rice-field-views-of-cemagi: PASS
+2023-09-26 17:36:38,018 | ERROR: list index out of range: FIXED
+2023-09-26 17:36:38,018 | INFO: https://www.villabalisale.com/property/villas-for-rent/charming-three-bedroom-villa-startegically-located-in-canggu: PASS
+2023-09-26 17:36:41,076 | ERROR: list index out of range: FIXED
+2023-09-26 17:36:41,076 | INFO: https://www.villabalisale.com/property/villas-for-rent/modern-two-bedroom-villa-located-in-quiet-canggu-area: PASS
+2023-09-26 17:36:44,434 | INFO: https://www.villabalisale.com/property/villas-for-rent/brand-new-four-bedroom-villa-walking-distance-to-nyayi-beach: PASS
+2023-09-26 17:36:48,134 | INFO: https://www.villabalisale.com/property/villas-for-rent/cozy-two-bedroom-villa-well-located-in-kerobokan: PASS
+2023-09-26 17:36:48,137 | INFO: Page: 0
+2023-09-26 17:36:51,817 | INFO: https://www.villabalisale.com/property/land/Expansive-9-Are-Land-Parcel-in-Tranquil-Pererenan-Tumbak-Bayuh-Vicinity: PASS
+2023-09-26 17:36:54,672 | INFO: https://www.villabalisale.com/property/land/Tranquil-5-Are-Land-Parcel-with-Enchanting-Rice-Field-Views-in-Tumbak-Bayuh: PASS
+2023-09-26 17:36:57,568 | INFO: https://www.villabalisale.com/property/land/amazing-freehold-land-for-sale-with-jungle-views: PASS
+2023-09-26 17:37:00,525 | INFO: https://www.villabalisale.com/property/land/river-view-freehold-land: PASS
+2023-09-26 17:37:03,328 | INFO: https://www.villabalisale.com/property/land/river-view-land-in-buwit-for-freehold: PASS
+2023-09-26 17:37:06,093 | INFO: https://www.villabalisale.com/property/land/Investment-Opportunity-near-Berawa-Beach: PASS
+2023-09-26 17:37:08,899 | INFO: https://www.villabalisale.com/property/land/Great-Leasehold-Plot-Near-The-Beach-with-Ocean-View: PASS
+2023-09-26 17:37:11,624 | INFO: https://www.villabalisale.com/property/land/Rare-Land-Below-Market-Price-in-Berawa-for-Sale: PASS
+2023-09-26 17:37:14,340 | INFO: https://www.villabalisale.com/property/land/Versatile-6-are-Land-on-Jalan-Tegal-Cupek-Kerobokan: PASS
+2023-09-26 17:37:17,604 | INFO: https://www.villabalisale.com/property/land/Tranquil-Riverside-Land-on-Jalan-Pantai-Nyanyi: PASS
+2023-09-26 17:37:17,604 | INFO: Page: 1
+2023-09-26 17:37:21,410 | INFO: https://www.villabalisale.com/property/land/freehold-beraban-land-for-sale: PASS
+2023-09-26 17:37:24,161 | INFO: https://www.villabalisale.com/property/land/walking-distance-small-plot-in-cemagi-area: PASS
+2023-09-26 17:37:26,947 | INFO: https://www.villabalisale.com/property/land/Rare-Land-in-Berawa---Best-for-Investment: PASS
+2023-09-26 17:37:29,815 | INFO: https://www.villabalisale.com/property/land/3-6-ARE-LAND-FOR-SALE-IN-JIMBARAN: PASS
+2023-09-26 17:37:32,550 | INFO: https://www.villabalisale.com/property/land/LEASEHOLD-LAND-OPPORTUNITY-20-ARE-LAND-IN-KEDUNGU: PASS
+2023-09-26 17:37:35,265 | INFO: https://www.villabalisale.com/property/land/great-beachfront-land-opportunity-in-tabanan: PASS
+2023-09-26 17:37:38,097 | INFO: https://www.villabalisale.com/property/land/10-Are-of-Prime-Land-in-Tumbak-Bayuh: PASS
+2023-09-26 17:37:40,867 | INFO: https://www.villabalisale.com/property/land/26-ARE-LAND-IN-KEDUNGU-CLOSE-TO-THE-BEACH: PASS
+2023-09-26 17:37:43,842 | INFO: https://www.villabalisale.com/property/land/16-75-Are-Land-in-Kedungu---5-Mins-to-The-Beach: PASS
+2023-09-26 17:37:46,643 | INFO: https://www.villabalisale.com/property/land/NICE-LEASEHOLD-LAND-IN-NUSA-DUA: PASS
+2023-09-26 17:37:46,643 | INFO: Page: 2
+2023-09-26 17:37:50,421 | INFO: https://www.villabalisale.com/property/land/exclusive-6-are-freehold-land-in-tegallalang-for-sale: PASS
+2023-09-26 17:37:53,508 | INFO: https://www.villabalisale.com/property/land/Beachside-Land-Plots-for-Leasehold-in-Kedungu-Tabanan: PASS
+2023-09-26 17:37:56,508 | INFO: https://www.villabalisale.com/property/land/17-are-commercial-land-in-kuta-for-lease: PASS
+2023-09-26 17:37:59,400 | INFO: https://www.villabalisale.com/property/land/Expansive-of-290-Are-Beachfront-Land-in-Tabanan-for-Sale: PASS
+2023-09-26 17:38:02,428 | INFO: https://www.villabalisale.com/property/land/10-Are-Riverside-Land-for-Sale-in-Pererenan: PASS
+2023-09-26 17:38:05,590 | INFO: https://www.villabalisale.com/property/land/Ricefield-View-Leasehold-Land-in-Kedungu-Main-Road-For-Sale: PASS
+2023-09-26 17:38:08,587 | INFO: https://www.villabalisale.com/property/land/Beautiful-Land-near-Kedungu-Beach-Available-for-Sale: PASS
+2023-09-26 17:38:11,518 | INFO: https://www.villabalisale.com/property/land/Land-for-Sale-of-73-Are-in-Kedungu-Tabanan: PASS
+2023-09-26 17:38:14,440 | INFO: https://www.villabalisale.com/property/land/12-are-tumbak-bayuh-rice-field-view: PASS
+2023-09-26 17:38:17,374 | INFO: https://www.villabalisale.com/property/land/amazing-beach-front-land-for-sale: PASS
+2023-09-26 17:38:17,375 | INFO: Page: 3
+2023-09-26 17:38:21,246 | INFO: https://www.villabalisale.com/property/land/rare-opportunity-expansive-5-are-freehold-land-for-sale-in-selemedeg-tabanan: PASS
+2023-09-26 17:38:24,388 | INFO: https://www.villabalisale.com/property/land/Rare-Leasehold-Land-for-Sale-in-Umalas: PASS
+2023-09-26 17:38:27,490 | INFO: https://www.villabalisale.com/property/land/Beautiful-Land-Close-to-Pigstone-Beach-for-sale: PASS
+2023-09-26 17:38:30,494 | INFO: https://www.villabalisale.com/property/land/Rare-Opportunity-Leasehold-Land-for-Sale-in-Enchanting-Kaba-Kaba: PASS
+2023-09-26 17:38:33,577 | INFO: https://www.villabalisale.com/property/land/1-89-Hectare-Land-for-Sale-in-Desired-Bingin-Location: PASS
+2023-09-26 17:38:38,571 | INFO: https://www.villabalisale.com/property/land/Serene-Beachside-Land-for-Sale-in-Tabanan: PASS
+2023-09-26 17:38:41,681 | ERROR: invalid literal for int() with base 10: '' :FIXED
+2023-09-26 17:38:41,681 | ERROR: invalid literal for int() with base 10: '' :FIXED
+2023-09-26 17:38:41,681 | INFO: https://www.villabalisale.com/property/land/exceptional-freehold-land-for-sale-in-idyllic-baturiti: PASS
+2023-09-26 17:38:44,467 | INFO: https://www.villabalisale.com/property/land/rare-opportunity-leasehold-land-for-sale-in-enchanting-kaba-kaba: PASS
+2023-09-26 17:38:47,436 | INFO: https://www.villabalisale.com/property/land/10-are-amazing-beach-front-karangasem: PASS
+2023-09-26 17:38:50,453 | INFO: https://www.villabalisale.com/property/land/prime-land-for-sale-in-benoa: PASS
+2023-09-26 17:38:50,457 | INFO:                                                 Title      Code    First Scrape Date  Current Scrape Date  ...  Land Size (are)  Building Size (sqm) Pool        Furnished
+0                     NICE LEASEHOLD LAND IN NUSA DUA    CLG521  2023-09-26 17:27:12  2023-09-26 17:27:12  ...             5.00                  0.0   No               No
+1   off-plan breathaking beach views 1 bedroom vil...  CVT1463A  2023-09-26 17:27:12  2023-09-26 17:27:12  ...             1.50                117.0  yes  fully furnished
+2   Embrace Elegance 1 Bedroom Villa in Pererenan ...  CVT1444A  2023-09-26 17:27:12  2023-09-26 17:27:12  ...             0.74                113.0  yes  fully furnished
+3   OCEANSIDE FREEHOLD VILLA WITH AMAZING INVESTME...    VL2588  2023-09-26 17:27:12  2023-09-26 17:27:12  ...             3.25                100.0  yes  Fully furnished
+4   TWO OCEANSIDE VILLAS WITH AMAZING INVESTMENT R...    VL2552  2023-09-26 17:27:12  2023-09-26 17:27:12  ...             6.50                200.0  yes  fully furnished
+..                                                ...       ...                  ...                  ...  ...              ...                  ...  ...              ...
+65   Modern One Bedroom Closed Living House In Berawa   YRL2641  2023-09-26 17:10:25  2023-09-26 17:27:12  ...             1.00                  0.0   no          Unknown
+66          High quality four bedroom villa in Canggu    VL2750  2023-09-26 17:10:25  2023-09-26 17:27:12  ...             4.60                276.0  yes  fully furnished
+67  Stylish Two Bedroom Modern Open Living Room Vi...   YRR3224  2023-09-26 17:10:25  2023-09-26 17:27:12  ...             2.00                200.0  yes          Unknown
+68  Luxury Three Bedroom Enclosed Living Villa Set...   YRR3210  2023-09-26 17:10:25  2023-09-26 17:27:12  ...             3.20                  0.0  yes          Unknown
+69  Beautiful Three Bedroom Boutique Villa Situate...   YRR3225  2023-09-26 17:10:25  2023-09-26 17:27:12  ...             2.00                  0.0  yes          Unknown
+
+[70 rows x 22 columns]
+2023-09-26 17:38:50,483 | INFO: The Google Sheet is not empty!
+2023-09-26 17:38:50,496 | DEBUG: Resetting dropped connection: sheets.googleapis.com
+2023-09-26 17:38:50,985 | DEBUG: https://sheets.googleapis.com:443 "POST /v4/spreadsheets/1HP5RYHmyaTr0PmEo8pWtoHUsG45vsEUKPJViRjC0fAA/values/%27Sheet1%27:clear HTTP/1.1" 200 None
+2023-09-26 17:38:51,227 | DEBUG: https://sheets.googleapis.com:443 "POST /v4/spreadsheets/1HP5RYHmyaTr0PmEo8pWtoHUsG45vsEUKPJViRjC0fAA:batchUpdate HTTP/1.1" 200 None
+2023-09-26 17:38:51,656 | DEBUG: https://sheets.googleapis.com:443 "POST /v4/spreadsheets/1HP5RYHmyaTr0PmEo8pWtoHUsG45vsEUKPJViRjC0fAA/values/%27Sheet1%27%21A1:append?valueInputOption=RAW HTTP/1.1" 200 None
+2023-09-26 17:38:51,896 | DEBUG: https://sheets.googleapis.com:443 "POST /v4/spreadsheets/1HP5RYHmyaTr0PmEo8pWtoHUsG45vsEUKPJViRjC0fAA:batchUpdate HTTP/1.1" 200 None
+2023-09-26 17:38:52,190 | DEBUG: https://sheets.googleapis.com:443 "POST /v4/spreadsheets/1HP5RYHmyaTr0PmEo8pWtoHUsG45vsEUKPJViRjC0fAA/values/%27Sheet1%27%21A2:append?valueInputOption=RAW HTTP/1.1" 200 None

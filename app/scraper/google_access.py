@@ -45,14 +45,17 @@ def upload_to_google(df, sheet):
     writes data from a dataframe to it.
 
     """
+
     # Convert the DataFrame to a list of lists
     data = df.values.tolist()
 
     # Clear existing data and update the Google Sheet with new data
     sheet.clear()
+
     # Convert the DataFrame headers to a list and insert as the first row
     header_row = df.columns.tolist()
     sheet.insert_rows([header_row], row=1)
+
     # insert the full data
     sheet.insert_rows(data, row=2)
 
