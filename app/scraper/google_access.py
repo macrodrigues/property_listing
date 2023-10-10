@@ -3,8 +3,8 @@
 One for authentication, one for reading and one for uploading.
 
 """
-import pandas as pd
 import datetime as dt
+import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 

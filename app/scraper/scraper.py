@@ -42,6 +42,7 @@ def update_dataframe(df, df_previous) -> pd.DataFrame:
     old dataset with new data while preserving specific columns."""
 
     logger.info(df_previous)
+    logger.info(df_previous.shape)
 
     if df_previous.empty:  # First-time scrape
         df['First Scrape Date'] = dt.datetime.now().strftime(
@@ -81,7 +82,9 @@ def update_dataframe(df, df_previous) -> pd.DataFrame:
         df_merged = df_merged.apply(fillna_from_same_row, axis=1)
 
         df = df_merged.sort_values('First Scrape Date', ascending=False)
-
+        df.drop_duplicates(inplace=True)
+        df.reset_index(inplace=True, drop=True)
+        logger.info(df.shape)
     return df
 
 
@@ -279,8 +282,8 @@ def get_only_villas_features(soup, description_items, prices, prices_usd):
     price_usd, payment_period_usd = get_price_parameters(prices_usd)
     price, payment_period = get_price_parameters(prices)
 
-    return price, price_usd,\
-        payment_period, payment_period_usd,\
+    return price, price_usd, \
+        payment_period, payment_period_usd, \
         year_built, land_size, building_size, \
         pool, furnished, bedrooms, bathrooms
 
@@ -445,13 +448,13 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                     codes = soup.select('.code')
                     code = [code.text.strip() for code in codes][0]
 
-                    type_sale, hold_years, description_items,\
+                    type_sale, hold_years, description_items, \
                         location = get_shared_features(soup)
 
                     if 'villas-for-sale' in url:
-                        price, price_usd, payment_period, payment_period_usd,\
-                            year_built, land_size, building_size,\
-                            pool, furnished, bedrooms,\
+                        price, price_usd, payment_period, payment_period_usd, \
+                            year_built, land_size, building_size, \
+                            pool, furnished, bedrooms, \
                             bathrooms = get_only_villas_features(
                                 soup, description_items, prices, prices_usd)
 
@@ -471,8 +474,8 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                                 prices_usd,
                                 'villas')
 
-                        land_size, building_size,\
-                            pool, bedrooms,\
+                        land_size, building_size, \
+                            pool, bedrooms, \
                             bathrooms = get_only_villas_rents_features(
                                 soup,
                                 description_items)
@@ -550,17 +553,17 @@ def main(url_lands, url_villas, url_villas_rents):
             df_villas = scraper(
                 page,
                 url=URL_VILLAS,
-                n_pages=2,
+                n_pages=num_villas - 1,
                 flag=0)  # flag parameter is used to adapt the currency click
             df_villas_rents = scraper(
                 page,
                 url=URL_VILLAS_RENTS,
-                n_pages=4,
+                n_pages=num_villas_rents - 1,
                 flag=1)
             df_lands = scraper(
                 page,
                 url=URL_LANDS,
-                n_pages=4,
+                n_pages=num_lands - 1,
                 flag=1)
 
             # Merge both
@@ -627,4 +630,12 @@ if __name__ == '__main__':
     logger = logging.getLogger()
 
     # run main function
-    main(URL_LANDS, URL_VILLAS, URL_VILLAS_RENTS)
+    trials = 10
+    for trial in range(trials):
+        try:
+            main(URL_LANDS, URL_VILLAS, URL_VILLAS_RENTS)
+            break
+        except Exception as error:
+            logger.info("%s: FAIL", str(error))
+            time.sleep(20)
+            continue

@@ -1,8 +1,6 @@
-villas.csv
-lands.csv
-test.ipynb
-kib_data.csv
 keys.env
 credentials.json
 __pycache__
 logs
+fix.ipynb
+google_access.py
