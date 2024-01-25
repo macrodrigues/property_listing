@@ -47,44 +47,41 @@ def update_dataframe(df, df_previous) -> pd.DataFrame:
     if df_previous.empty:  # First-time scrape
         df['First Scrape Date'] = dt.datetime.now().strftime(
             '%Y-%m-%d %H:%M:%S')
-        df['Current Scrape Date'] = df['First Scrape Date']
-        df['Original Price (USD)'] = df['Price (USD)']
-        df['Original Price (IDR)'] = df['Price (IDR)']
+        df['Last Scrape Date'] = df['First Scrape Date']
+        df['Original Price (USD)'] = df['Last Price (USD)']
+        df['Original Price (IDR)'] = df['Last Price (IDR)']
     else:  # Subsequent scrapes
         logger.info("The Google Sheet is not empty!")
-        df['Current Scrape Date'] = dt.datetime.now().strftime(
+        df['Last Scrape Date'] = dt.datetime.now().strftime(
             '%Y-%m-%d %H:%M:%S')
 
-        # Merge old and new data, preserving selected columns
-        columns_to_preserve = [
-            'Code',
-            'First Scrape Date',
-            'Original Price (USD)',
-            'Original Price (IDR)']
-        df_merged = pd.merge(
-            df,
-            df_previous[columns_to_preserve],
-            on='Code',
-            how='left')
+        # Concatenate the dataframes and drop duplicates based on 'Code'
+        df_concatenated = pd.concat([df, df_previous], ignore_index=True)
+        df_concatenated.drop_duplicates(subset='Code', inplace=True)
 
         # Define a function to fill NaN values in specific columns with values
         # from the same row
         def fillna_from_same_row(row):
             if pd.isna(row['First Scrape Date']):
-                row['First Scrape Date'] = row['Current Scrape Date']
+                row['First Scrape Date'] = row['Last Scrape Date']
             if pd.isna(row['Original Price (USD)']):
-                row['Original Price (USD)'] = row['Price (USD)']
+                row['Original Price (USD)'] = row['Last Price (USD)']
             if pd.isna(row['Original Price (IDR)']):
-                row['Original Price (IDR)'] = row['Price (IDR)']
+                row['Original Price (IDR)'] = row['Last Price (IDR)']
             return row
 
         # Apply the fillna_from_same_row function row-wise to fill NaN values
-        df_merged = df_merged.apply(fillna_from_same_row, axis=1)
+        df_concatenated = df_concatenated.apply(fillna_from_same_row, axis=1)
 
-        df = df_merged.sort_values('First Scrape Date', ascending=False)
-        df.drop_duplicates(inplace=True)
+        # Set 'Listed' to 'unlisted' for new entries
+        df_concatenated.loc[~df_concatenated['Code'].isin(
+            df['Code']), 'Listed'] = 'Unlisted'
+
+        df = df_concatenated.sort_values('First Scrape Date', ascending=False)
         df.reset_index(inplace=True, drop=True)
         logger.info(df.shape)
+        logger.info(df)
+
     return df
 
 
@@ -127,6 +124,14 @@ def change_currency_n_get_soup(page, property_link,
     # go to new url provided by the link
     page.goto(property_link)
 
+    # check if property is listed
+    is_listed = 'Listed'
+
+    # check current URL
+    current_url = page.url
+    if current_url != property_link:
+        is_listed = 'Unlisted'
+
     # Click on the currency dropdown
     page.click('.header-cur')
 
@@ -140,7 +145,7 @@ def change_currency_n_get_soup(page, property_link,
     else:
         page.locator(f"text={currency}").nth(0).click()
 
-    return BeautifulSoup(page.inner_html('body'), 'html.parser')
+    return BeautifulSoup(page.inner_html('body'), 'html.parser'), is_listed
 
 
 def get_shared_features(soup):
@@ -247,6 +252,25 @@ def get_only_villas_features(soup, description_items, prices, prices_usd):
         try:
             furnished = description_items[7]\
                 .split('\n')[1].strip().lower()
+
+            if (furnished.upper() == 'yes'.upper())\
+                    or (furnished.upper() == 'furnish'.upper()):
+                furnished = 'Furnished'
+            if (furnished.upper() == 'full furnished'.upper())\
+                    or (furnished.upper() == 'fully'.upper())\
+                    or (furnished.upper() == 'full furnish'.upper())\
+                    or (furnished.upper() == 'full'.upper()):
+                furnished = 'Fully Furnished'
+            if (furnished.upper() == 'no furnish'.upper())\
+                    or (furnished.upper() == 'no'.upper())\
+                    or (furnished.upper() == 'un-furnish'.upper()):
+                furnished = 'Unfurnished'
+            if (furnished.upper() == 'semi'.upper())\
+                    or (furnished.upper() == 'semi-furnished'.upper())\
+                    or (furnished.upper() == 'semi frunished'.upper())\
+                    or (furnished.upper() == 'semi furnish'.upper()):
+                furnished = 'Semi Furnished'
+
         except Exception as error:
             logger.error(error)
             furnished = "Unknown"
@@ -261,6 +285,25 @@ def get_only_villas_features(soup, description_items, prices, prices_usd):
         try:
             furnished = description_items[6]\
                 .split('\n')[1].strip()
+
+            if (furnished.upper() == 'yes'.upper())\
+                    or (furnished.upper() == 'furnish'.upper()):
+                furnished = 'Furnished'
+            if (furnished.upper() == 'full furnished'.upper())\
+                    or (furnished.upper() == 'fully'.upper())\
+                    or (furnished.upper() == 'full furnish'.upper())\
+                    or (furnished.upper() == 'full'.upper()):
+                furnished = 'Fully Furnished'
+            if (furnished.upper() == 'no furnish'.upper())\
+                    or (furnished.upper() == 'no'.upper())\
+                    or (furnished.upper() == 'un-furnish'.upper()):
+                furnished = 'Unfurnished'
+            if (furnished.upper() == 'semi'.upper())\
+                    or (furnished.upper() == 'semi-furnished'.upper())\
+                    or (furnished.upper() == 'semi frunished'.upper())\
+                    or (furnished.upper() == 'semi furnish'.upper()):
+                furnished = 'Semi Furnished'
+
         except Exception as error:
             furnished = "Unknown"
             logger.error('%s: FIXED', str(error))
@@ -379,14 +422,15 @@ def gen_detail_dict(
     title, price_usd, price, payment_period_usd, payment_period,
     code, location, type_sale, hold_years, link, property_type, year_built,
         bedrooms, bathrooms, land_size,
-        building_size, pool, furnished) -> dict:
+        building_size, pool, furnished, is_listed) -> dict:
     """ This function returns a dictionary with all the information
     to be uploaded on the Google Sheets."""
 
     return {
         'Title': title,
-        'Price (USD)': price_usd,
-        'Price (IDR)': price,
+        'Listed': is_listed,
+        'Last Price (USD)': price_usd,
+        'Last Price (IDR)': price,
         'Payment Period (USD)': payment_period_usd,
         'Payment Period (IDR)': payment_period,
         'Code': code,
@@ -401,7 +445,8 @@ def gen_detail_dict(
         'Land Size (are)': land_size,
         'Building Size (sqm)': building_size,
         'Pool': pool,
-        'Furnished': furnished
+        'Furnished': ' '.join(
+            [item.capitalize() for item in furnished.split(' ')])
     }
 
 
@@ -426,11 +471,11 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
             while retries <= max_retries:
                 try:
                     # make a beautiful soup object and convert to USD
-                    soup_usd = change_currency_n_get_soup(
+                    soup_usd, is_listed = change_currency_n_get_soup(
                         page, link, 'USD', flag)
 
                     # make a beautiful soup object and convert to IDR
-                    soup = change_currency_n_get_soup(
+                    soup, is_listed = change_currency_n_get_soup(
                         page, link, 'IDR', flag)
                     flag = 1
 
@@ -463,7 +508,8 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                             payment_period, code, location, type_sale,
                             hold_years, link, 'villa', year_built,
                             bedrooms, bathrooms,
-                            land_size, building_size, pool, furnished)
+                            land_size, building_size,
+                            pool, furnished, is_listed)
 
                         details.append(detail)
 
@@ -484,7 +530,8 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                             title, price_usd, price, payment_period_usd,
                             payment_period, code, location, "Unknown", 0,
                             link, 'villa', "Unknown", bedrooms, bathrooms,
-                            land_size, building_size, pool, "Unknown")
+                            land_size, building_size,
+                            pool, "Unknown", is_listed)
 
                         details.append(detail)
 
@@ -506,7 +553,7 @@ def scraper(page, url, n_pages=90, flag=0) -> pd.DataFrame:
                             title, price_usd, price, payment_period_usd,
                             payment_period, code, location, type_sale,
                             hold_years, link, 'land', "Unknown", 0, 0,
-                            land_size, 0.0, 'No', 'No')
+                            land_size, 0.0, 'No', 'Unfurnished', is_listed)
 
                         details.append(detail)
 
@@ -544,7 +591,7 @@ def main(url_lands, url_villas, url_villas_rents):
             # Authenticate Google Sheet and open the worksheet
             worksheet = google_authentication(
                 f"{PATH}/credentials.json",
-                os.getenv('SHEET_ID'))
+                os.getenv('SHEET_ID2'))
 
             # Check for old data in the Google
             df_old = read_from_google(worksheet)
@@ -567,13 +614,20 @@ def main(url_lands, url_villas, url_villas_rents):
                 flag=1)
 
             # Merge both
-            df_new = pd.concat([df_villas, df_villas_rents, df_lands])
+            df_new = pd.concat([
+                df_villas,
+                df_villas_rents,
+                df_lands
+                ])
 
             # Update dataframe
             df_new = update_dataframe(df_new, df_old)
 
             # apply reorder
             df_new = df_new[column_order]
+
+            # fill NaN
+            df_new = df_new.fillna('Unlisted')
 
             # Upload to Google Sheet with new information
             upload_to_google(df_new, worksheet)
@@ -602,12 +656,13 @@ if __name__ == '__main__':
         'Title',
         'Code',
         'First Scrape Date',
-        'Current Scrape Date',
+        'Last Scrape Date',
+        'Listed',
         'Original Price (USD)',
-        'Price (USD)',
+        'Last Price (USD)',
         'Payment Period (USD)',
         'Original Price (IDR)',
-        'Price (IDR)',
+        'Last Price (IDR)',
         'Payment Period (IDR)',
         'Location',
         'Type of Sale',
