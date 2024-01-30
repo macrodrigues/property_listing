@@ -92,7 +92,8 @@ def update_dataframe(df, df_previous) -> pd.DataFrame:
         logger.info(df_concatenated)
 
         df_concatenated.loc[
-            ~df_concatenated['Code'].isin(df['Code']), 'Listed'] = 'Unlisted'
+            ~df_concatenated['Code'].isin(
+                df_merged['Code']), 'Listed'] = 'Unlisted'
 
         df = df_concatenated.sort_values('First Scrape Date', ascending=False)
         df.reset_index(inplace=True, drop=True)
