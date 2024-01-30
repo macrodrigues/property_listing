@@ -55,9 +55,19 @@ def update_dataframe(df, df_previous) -> pd.DataFrame:
         df['Last Scrape Date'] = dt.datetime.now().strftime(
             '%Y-%m-%d %H:%M:%S')
 
-        # Concatenate the dataframes and drop duplicates based on 'Code'
-        df_concatenated = pd.concat([df, df_previous], ignore_index=True)
-        df_concatenated.drop_duplicates(subset='Code', inplace=True)
+        # Merge the dataframes on 'Code'
+        columns_to_preserve = [
+            'Code',
+            'First Scrape Date',
+            'Original Price (USD)',
+            'Original Price (IDR)']
+        df_merged = pd.merge(
+            df,
+            df_previous[columns_to_preserve],
+            on='Code',
+            how='left')
+
+        logger.info(df_merged)
 
         # Define a function to fill NaN values in specific columns with values
         # from the same row
@@ -71,11 +81,18 @@ def update_dataframe(df, df_previous) -> pd.DataFrame:
             return row
 
         # Apply the fillna_from_same_row function row-wise to fill NaN values
-        df_concatenated = df_concatenated.apply(fillna_from_same_row, axis=1)
+        df_merged = df_merged.apply(fillna_from_same_row, axis=1)
 
-        # Set 'Listed' to 'unlisted' for new entries
-        df_concatenated.loc[~df_concatenated['Code'].isin(
-            df['Code']), 'Listed'] = 'Unlisted'
+        # Concatenate the dataframes and drop duplicates based on 'Code'
+        df_concatenated = pd.concat(
+            [df_merged, df_previous], ignore_index=True)
+        df_concatenated = df_concatenated.drop_duplicates(
+            subset='Code').reset_index(drop=True)
+
+        logger.info(df_concatenated)
+
+        df_concatenated.loc[
+            ~df_concatenated['Code'].isin(df['Code']), 'Listed'] = 'Unlisted'
 
         df = df_concatenated.sort_values('First Scrape Date', ascending=False)
         df.reset_index(inplace=True, drop=True)
@@ -591,7 +608,7 @@ def main(url_lands, url_villas, url_villas_rents):
             # Authenticate Google Sheet and open the worksheet
             worksheet = google_authentication(
                 f"{PATH}/credentials.json",
-                os.getenv('SHEET_ID2'))
+                os.getenv('SHEET_ID'))
 
             # Check for old data in the Google
             df_old = read_from_google(worksheet)
